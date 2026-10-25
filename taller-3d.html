@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Capa a Capa 3D · Impresión 3D en [TU CIUDAD]</title>
+<meta name="description" content="Llaveros personalizados, litofanías, figuras, recuerdos para eventos y piezas técnicas impresas en 3D.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ====== CAMBIA AQUÍ TUS COLORES ====== */
+  :root{
+    --acento:#F28C38;      /* naranja filamento */
+    --oscuro:#1B1B1F;
+    --fondo:#F4F2EE;
+    --blanco:#FFFFFF;
+    --texto-suave:#5A5853;
+    --texto-claro:#C9C6C0;
+    --borde:#E3DFD7;
+    --naranja-texto:#B8430F;
+    --whatsapp:#1E8A4C;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;font-family:Inter,system-ui,sans-serif;color:var(--oscuro);background:var(--fondo);line-height:1.5}
+  h1,h2,h3{font-family:"Space Grotesk",sans-serif;margin:0;letter-spacing:-.5px}
+  a{color:inherit}
+  img{max-width:100%;display:block}
+  .contenedor{max-width:1180px;margin:0 auto;padding:0 24px}
+  .etiqueta{font-size:13px;letter-spacing:2px;text-transform:uppercase;font-weight:600;color:var(--naranja-texto)}
+  .btn{display:inline-flex;align-items:center;gap:10px;text-decoration:none;font-weight:600;padding:14px 24px;border-radius:999px;border:none;font:inherit;font-weight:600;cursor:pointer;min-height:44px}
+  .btn-acento{background:var(--acento);color:var(--oscuro)}
+  .btn-acento:hover{filter:brightness(1.08)}
+  .btn-borde{border:1.5px solid #5A5853;color:var(--fondo)}
+  .btn-borde:hover{border-color:var(--fondo)}
+  .btn-wa{background:var(--whatsapp);color:#fff}
+  .btn-oscuro{background:var(--oscuro);color:var(--fondo);width:100%;justify-content:center;font-size:16px}
+
+  /* Encabezado */
+  header{background:var(--oscuro);color:var(--fondo);position:sticky;top:0;z-index:10}
+  .barra{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding:16px 24px}
+  .logo{display:flex;align-items:center;gap:10px;font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:22px;text-decoration:none}
+  nav{display:flex;flex-wrap:wrap;gap:24px;font-size:15px}
+  nav a{text-decoration:none;opacity:.9}
+  nav a:hover{opacity:1;color:var(--acento)}
+
+  /* Portada */
+  .portada{background:var(--oscuro);color:var(--fondo)}
+  .portada .contenedor{display:flex;flex-wrap:wrap;gap:48px;align-items:center;padding-top:56px;padding-bottom:88px}
+  .portada-texto{flex:1 1 440px;display:flex;flex-direction:column;gap:22px}
+  .portada .etiqueta{color:var(--acento)}
+  .portada h1{font-size:clamp(40px,6vw,62px);line-height:1.02;letter-spacing:-2px}
+  .portada p{font-size:19px;color:var(--texto-claro);max-width:520px;margin:0}
+  .botones{display:flex;flex-wrap:wrap;gap:12px}
+  .datos{display:flex;flex-wrap:wrap;gap:24px;font-size:14px;color:var(--texto-claro)}
+  .mosaico{flex:1 1 380px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  .foto{aspect-ratio:1;border-radius:18px;background:#2A2A30;display:flex;align-items:flex-end;padding:16px;font-size:13px;color:#A8A59F;overflow:hidden;background-size:cover;background-position:center}
+  .foto.acento{background-color:var(--acento);color:var(--oscuro)}
+  .foto.medio{background-color:#3A3A42;color:var(--texto-claro)}
+
+  /* Secciones */
+  section{padding:80px 0 0}
+  .titulo-seccion{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:32px}
+  .titulo-seccion h2,.h2{font-size:clamp(30px,4vw,42px);letter-spacing:-1px;margin-top:8px}
+  .titulo-seccion p{margin:0;color:var(--texto-suave);max-width:380px}
+
+  /* Catálogo */
+  .productos{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px}
+  .producto{background:var(--blanco);border:1px solid var(--borde);border-radius:20px;overflow:hidden;display:flex;flex-direction:column;transition:transform .2s,box-shadow .2s}
+  .producto:hover{transform:translateY(-4px);box-shadow:0 12px 30px rgba(0,0,0,.08)}
+  .producto .img{aspect-ratio:4/3;background:#E9E5DD;display:flex;align-items:center;justify-content:center;color:#6E6B65;font-size:13px;text-align:center;padding:12px;background-size:cover;background-position:center}
+  .producto .cuerpo{padding:20px;display:flex;flex-direction:column;gap:8px;flex-grow:1}
+  .producto h3{font-size:21px}
+  .producto p{margin:0;color:var(--texto-suave);font-size:15px;flex-grow:1}
+  .producto .pie{display:flex;justify-content:space-between;align-items:center;padding-top:10px}
+  .producto .pie a{font-size:14px;font-weight:600;color:var(--naranja-texto)}
+
+  /* Pasos */
+  .pasos{list-style:none;margin:32px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
+  .pasos li{background:var(--oscuro);color:var(--fondo);border-radius:20px;padding:26px;display:flex;flex-direction:column;gap:12px}
+  .pasos .num{font-family:"Space Grotesk",sans-serif;font-size:44px;font-weight:700;color:var(--acento);line-height:1}
+  .pasos h3{font-size:19px}
+  .pasos p{margin:0;color:var(--texto-claro);font-size:15px}
+
+  /* Cotizador */
+  .cotiza{background:var(--blanco);border:1px solid var(--borde);border-radius:28px;padding:40px;display:flex;flex-wrap:wrap;gap:40px}
+  .cotiza-texto{flex:1 1 320px;display:flex;flex-direction:column;gap:16px;align-items:flex-start}
+  .cotiza-texto p{margin:0;color:var(--texto-suave)}
+  form{flex:1 1 420px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+  label{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:500}
+  .completo{grid-column:1/-1}
+  input,select,textarea{padding:13px;border:1px solid #CFCAC1;border-radius:12px;font:inherit;background:#FAF9F7;color:var(--oscuro)}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--acento);outline-offset:1px}
+  input[type=file]{border-style:dashed}
+  .nota{font-size:13px;color:var(--texto-suave);margin:0}
+
+  /* Info */
+  .info{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px}
+  .info div{padding:24px 4px;border-top:3px solid var(--oscuro)}
+  .info h3{font-size:19px;margin-bottom:8px}
+  .info p{margin:0;color:var(--texto-suave);font-size:15px}
+
+  /* FAQ */
+  .faq{max-width:860px}
+  details{background:var(--blanco);border:1px solid var(--borde);border-radius:16px;padding:20px 22px;margin-bottom:12px}
+  summary{font-weight:600;font-size:17px;cursor:pointer}
+  details p{margin:12px 0 0;color:var(--texto-suave)}
+
+  /* Pie */
+  footer{background:var(--oscuro);color:var(--texto-claro);margin-top:88px}
+  footer .contenedor{display:flex;flex-wrap:wrap;justify-content:space-between;gap:24px;padding-top:40px;padding-bottom:40px;font-size:14px}
+  footer .marca{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:20px;color:var(--fondo)}
+  .redes{display:flex;flex-wrap:wrap;gap:20px;align-items:center}
+  .redes a{color:var(--fondo)}
+
+  /* Botón flotante de WhatsApp */
+  .wa-flotante{position:fixed;right:20px;bottom:20px;width:60px;height:60px;border-radius:50%;background:var(--whatsapp);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 20px rgba(0,0,0,.25);z-index:20}
+
+  @media (max-width:640px){
+    nav{display:none}
+    .cotiza{padding:24px}
+    form{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<!-- ====== ENCABEZADO ====== -->
+<header>
+  <div class="barra contenedor">
+    <a href="#" class="logo">
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="#F28C38" stroke-width="2" aria-hidden="true"><path d="M6 24h20M8 19h16M10 14h12M12 9h8"/></svg>
+      Capa a Capa 3D
+    </a>
+    <nav aria-label="Principal">
+      <a href="#catalogo">Catálogo</a>
+      <a href="#pedir">Cómo pedir</a>
+      <a href="#cotiza">Cotiza tu idea</a>
+      <a href="#preguntas">Preguntas</a>
+    </nav>
+    <a href="#cotiza" class="btn btn-acento">Pedir por WhatsApp</a>
+  </div>
+</header>
+
+<!-- ====== PORTADA ====== -->
+<section class="portada" style="padding-top:0">
+  <div class="contenedor">
+    <div class="portada-texto">
+      <span class="etiqueta">Impresión 3D en [TU CIUDAD]</span>
+      <h1>Tu idea, impresa capa por capa.</h1>
+      <p>Llaveros con tu nombre, cuadros de litofanía con tus fotos, figuras, regalos para eventos y piezas técnicas. Hecho a mano en nuestro taller.</p>
+      <div class="botones">
+        <a href="#catalogo" class="btn btn-acento">Ver catálogo</a>
+        <a href="#cotiza" class="btn btn-borde">Cotizar algo personalizado</a>
+      </div>
+      <div class="datos">
+        <span>Entrega en [X] días hábiles</span>
+        <span>Envíos a todo México</span>
+        <span>Pedidos de mayoreo</span>
+      </div>
+    </div>
+    <!-- Para poner tus fotos: style="background-image:url('fotos/llaveros.jpg')" -->
+    <div class="mosaico">
+      <div class="foto">[FOTO: llaveros de colores]</div>
+      <div class="foto acento">[FOTO: litofanía iluminada]</div>
+      <div class="foto medio">[FOTO: impresora trabajando]</div>
+      <div class="foto">[FOTO: figura o maceta]</div>
+    </div>
+  </div>
+</section>
+
+<!-- ====== CATÁLOGO ====== -->
+<section id="catalogo">
+  <div class="contenedor">
+    <div class="titulo-seccion">
+      <div>
+        <span class="etiqueta">Catálogo</span>
+        <h2>Lo que más nos piden</h2>
+      </div>
+      <p>Precios de referencia. Cada pieza se puede personalizar en color, tamaño y texto.</p>
+    </div>
+    <div class="productos">
+      <article class="producto">
+        <div class="img">[FOTO: llaveros personalizados]</div>
+        <div class="cuerpo">
+          <h3>Llaveros con nombre</h3>
+          <p>Tu nombre, logo o frase en 1 o 2 colores. Ideales para regalos y eventos.</p>
+          <div class="pie"><strong>Desde $[PRECIO]</strong><a href="#cotiza" data-producto="Llaveros">Pedir</a></div>
+        </div>
+      </article>
+      <article class="producto">
+        <div class="img">[FOTO: litofanía con luz]</div>
+        <div class="cuerpo">
+          <h3>Litofanías y cuadros</h3>
+          <p>Tu foto impresa en relieve que se revela con luz. Opción con marco y luz LED.</p>
+          <div class="pie"><strong>Desde $[PRECIO]</strong><a href="#cotiza" data-producto="Litofanía / cuadro">Pedir</a></div>
+        </div>
+      </article>
+      <article class="producto">
+        <div class="img">[FOTO: macetas y figuras]</div>
+        <div class="cuerpo">
+          <h3>Figuras y decoración</h3>
+          <p>Figuras, macetas, organizadores y lámparas en el color que elijas.</p>
+          <div class="pie"><strong>Desde $[PRECIO]</strong><a href="#cotiza" data-producto="Figura o decoración">Pedir</a></div>
+        </div>
+      </article>
+      <article class="producto">
+        <div class="img">[FOTO: recuerdos de evento]</div>
+        <div class="cuerpo">
+          <h3>Recuerdos para eventos</h3>
+          <p>Bodas, XV años, bautizos y graduaciones. Precio especial por volumen.</p>
+          <div class="pie"><strong>Desde $[PRECIO] c/u</strong><a href="#cotiza" data-producto="Recuerdos para evento">Pedir</a></div>
+        </div>
+      </article>
+      <article class="producto">
+        <div class="img">[FOTO: pieza automotriz]</div>
+        <div class="cuerpo">
+          <h3>Piezas técnicas y repuestos</h3>
+          <p>Clips, soportes y tapas de auto o electrodomésticos en ASA, PETG o nylon.</p>
+          <div class="pie"><strong>Cotización</strong><a href="#cotiza" data-producto="Pieza técnica / repuesto">Pedir</a></div>
+        </div>
+      </article>
+      <article class="producto">
+        <div class="img">[FOTO: molde arquitectónico]</div>
+        <div class="cuerpo">
+          <h3>Moldes y maquetas</h3>
+          <p>Moldes para yeso o concreto y maquetas de arquitectura a escala.</p>
+          <div class="pie"><strong>Cotización</strong><a href="#cotiza" data-producto="Molde o maqueta">Pedir</a></div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ====== CÓMO PEDIR ====== -->
+<section id="pedir">
+  <div class="contenedor">
+    <span class="etiqueta">Cómo pedir</span>
+    <h2 class="h2">Así de fácil, en 4 pasos</h2>
+    <ol class="pasos">
+      <li><span class="num">01</span><h3>Elige o cuéntanos</h3><p>Escoge del catálogo o mándanos tu idea, foto o archivo STL.</p></li>
+      <li><span class="num">02</span><h3>Te cotizamos</h3><p>Recibes precio y tiempo de entrega por WhatsApp.</p></li>
+      <li><span class="num">03</span><h3>Anticipo e impresión</h3><p>Con el 50% de anticipo arrancamos. Te mandamos foto del avance.</p></li>
+      <li><span class="num">04</span><h3>Entrega</h3><p>Recoges, nos vemos en punto de encuentro o te lo enviamos.</p></li>
+    </ol>
+  </div>
+</section>
+
+<!-- ====== COTIZADOR ====== -->
+<section id="cotiza">
+  <div class="contenedor">
+    <div class="cotiza">
+      <div class="cotiza-texto">
+        <span class="etiqueta">Personalizados</span>
+        <h2 class="h2" style="margin:0;line-height:1.05">¿Tienes una idea? Te la cotizamos.</h2>
+        <p>Llena el formulario y se abrirá WhatsApp con tu pedido ya escrito. Ahí mismo nos mandas tu foto, dibujo o archivo STL.</p>
+        <a id="wa-directo" href="#" class="btn btn-wa" target="_blank" rel="noopener">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12a9 9 0 0 1-13.5 7.8L3 21l1.2-4.5A9 9 0 1 1 21 12z"/></svg>
+          Escribir por WhatsApp
+        </a>
+      </div>
+      <form id="form-cotiza">
+        <label>Nombre<input type="text" name="nombre" required></label>
+        <label>Tu WhatsApp<input type="tel" name="tel" placeholder="10 dígitos"></label>
+        <label>¿Qué necesitas?
+          <select name="producto" id="campo-producto">
+            <option>Llaveros</option>
+            <option>Litofanía / cuadro</option>
+            <option>Figura o decoración</option>
+            <option>Recuerdos para evento</option>
+            <option>Pieza técnica / repuesto</option>
+            <option>Molde o maqueta</option>
+            <option>Otro</option>
+          </select>
+        </label>
+        <label>Cantidad<input type="number" name="cantidad" min="1" value="1"></label>
+        <label class="completo">Descríbelo (texto, colores, tamaño)<textarea name="detalle" rows="3"></textarea></label>
+        <button type="submit" class="btn btn-oscuro completo">Enviar y recibir cotización</button>
+        <p class="nota completo">Respondemos normalmente el mismo día en horario de taller.</p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- ====== INFO ====== -->
+<section>
+  <div class="contenedor info">
+    <div><h3>Pagos</h3><p>Transferencia, depósito o Mercado Pago. Anticipo del 50% en pedidos personalizados.</p></div>
+    <div><h3>Entregas</h3><p>Recoge en taller, punto de encuentro en [ZONA] o envío por paquetería.</p></div>
+    <div><h3>Mayoreo y eventos</h3><p>Recuerdos para bodas, XV años, bautizos y llaveros con logo para empresas.</p></div>
+    <div><h3>Materiales</h3><p>PLA para decoración, PETG y ASA para exterior y piezas resistentes.</p></div>
+  </div>
+</section>
+
+<!-- ====== PREGUNTAS ====== -->
+<section id="preguntas">
+  <div class="contenedor faq">
+    <h2 class="h2" style="margin-bottom:24px">Preguntas frecuentes</h2>
+    <details><summary>¿Cuánto tarda mi pedido?</summary><p>Piezas de catálogo en [X] días hábiles. Personalizados y mayoreo dependen del tamaño y la cantidad; te lo decimos al cotizar.</p></details>
+    <details><summary>¿Puedo mandar mi propio diseño?</summary><p>Sí. Aceptamos STL, 3MF u OBJ. Si solo tienes una foto o un dibujo, también podemos modelarlo por un costo extra.</p></details>
+    <details><summary>¿Hacen pedidos de mayoreo?</summary><p>Sí, desde [CANTIDAD] piezas con precio especial. Ideal para eventos y empresas.</p></details>
+    <details><summary>¿Qué tan resistentes son las piezas?</summary><p>Depende del material: PLA para decoración e interiores, PETG y ASA para piezas al sol o que llevan esfuerzo.</p></details>
+  </div>
+</section>
+
+<!-- ====== PIE ====== -->
+<footer>
+  <div class="contenedor">
+    <div>
+      <div class="marca">Capa a Capa 3D</div>
+      <div>[DIRECCIÓN DEL TALLER] · [HORARIO]</div>
+    </div>
+    <div class="redes">
+      <a href="#">Instagram</a>
+      <a href="#">Facebook</a>
+      <a href="#">TikTok</a>
+      <a href="#">Mercado Libre</a>
+    </div>
+  </div>
+</footer>
+
+<a id="wa-flotante" class="wa-flotante" href="#" target="_blank" rel="noopener" aria-label="Escribir por WhatsApp">
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12a9 9 0 0 1-13.5 7.8L3 21l1.2-4.5A9 9 0 1 1 21 12z"/></svg>
+</a>
+
+<script>
+  // ====== PON AQUÍ TU NÚMERO DE WHATSAPP (52 + 10 dígitos, sin espacios) ======
+  const WHATSAPP = "52XXXXXXXXXX";
+
+  const enlace = (texto) => "https://wa.me/" + WHATSAPP + "?text=" + encodeURIComponent(texto);
+  const saludo = "Hola, vi su página y quiero cotizar una impresión 3D.";
+  document.getElementById("wa-directo").href = enlace(saludo);
+  document.getElementById("wa-flotante").href = enlace(saludo);
+
+  // Al dar clic en "Pedir" de un producto, se preselecciona en el formulario
+  document.querySelectorAll("[data-producto]").forEach((a) => {
+    a.addEventListener("click", () => {
+      document.getElementById("campo-producto").value = a.dataset.producto;
+    });
+  });
+
+  // El formulario abre WhatsApp con el pedido ya escrito
+  document.getElementById("form-cotiza").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const d = new FormData(e.target);
+    const msg =
+      "Hola, quiero cotizar:\n" +
+      "• Nombre: " + d.get("nombre") + "\n" +
+      "• Producto: " + d.get("producto") + "\n" +
+      "• Cantidad: " + d.get("cantidad") + "\n" +
+      "• Detalles: " + (d.get("detalle") || "-") + "\n" +
+      (d.get("tel") ? "• Mi WhatsApp: " + d.get("tel") : "");
+    window.open(enlace(msg), "_blank");
+  });
+</script>
+</body>
+</html>
