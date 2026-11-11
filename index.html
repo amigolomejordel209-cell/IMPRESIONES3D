@@ -1,0 +1,1673 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 140 140'%3E%3Cpolygon points='70,10 130,44 70,78 10,44' fill='%23FF4438'/%3E%3Cpolygon points='10,44 70,78 70,138 10,104' fill='%23E6E9EF'/%3E%3Cpolygon points='130,44 70,78 70,138 130,104' fill='%236B7383'/%3E%3C/svg%3E">
+<title>RM 3D Design</title>
+<meta name="description" content="Impresión 3D, grabado y corte láser y maquetas a escala. Sube tu STL, cotiza al instante y fabrica con RM 3D Design.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+/* Concepto: panel de control de un taller de fabricación digital. Fondo grafito con retícula de plano,
+   paneles tipo HUD con esquinas marcadas, rojo láser para la acción y ámbar de filamento caliente como segundo acento. */
+:root{
+  --fondo:#0A0D12;        /* grafito azulado */
+  --panel:#10141B;
+  --panel-2:#151A23;
+  --linea:#232A36;
+  --linea-2:#323B4B;
+  --texto:#E6E9EF;
+  --suave:#98A1B2;
+  --laser:#FF4438;        /* rojo láser: acción y marca */
+  --laser-suave:rgba(255,68,56,.14);
+  --ambar:#FFB547;        /* filamento caliente: impresión 3D */
+  --ambar-suave:rgba(255,181,71,.13);
+  --ok:#38D39F;
+  --wa:#1F9D55;
+  --f-display:"Chakra Petch","Segoe UI",system-ui,sans-serif;
+  --f-texto:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--fondo);color:var(--texto);font-family:var(--f-texto);font-size:16px;line-height:1.55;
+  background-image:linear-gradient(var(--linea) 1px,transparent 1px),linear-gradient(90deg,var(--linea) 1px,transparent 1px);
+  background-size:48px 48px;background-attachment:fixed;background-position:-1px -1px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:60;background:var(--fondo)}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;background:radial-gradient(ellipse at 50% 0%,rgba(10,13,18,.55),var(--fondo) 70%)}
+a{color:inherit}
+img{max-width:100%;display:block}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:.2px}
+p{margin:0}
+:focus-visible{outline:2px solid var(--ambar);outline-offset:2px}
+.contenedor{max-width:1200px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.mono{font-family:var(--f-mono)}
+.etiqueta{font-family:var(--f-mono);font-size:12.5px;letter-spacing:2px;text-transform:uppercase;color:var(--suave);display:flex;align-items:center;gap:10px}
+.etiqueta::before{content:"";width:18px;height:1px;background:var(--laser)}
+.etiqueta.ambar::before{background:var(--ambar)}
+.h2{font-size:clamp(30px,4.2vw,48px);line-height:1.05;margin-top:10px;text-transform:uppercase}
+.sub{color:var(--suave);max-width:62ch;margin-top:14px;font-size:17px}
+section{padding-block:96px 0}
+
+/* Botones */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:46px;padding:12px 22px;font-family:var(--f-display);font-weight:600;font-size:15px;letter-spacing:1px;text-transform:uppercase;text-decoration:none;border:1px solid transparent;background:none;color:var(--texto);cursor:pointer;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn-laser{background:var(--laser);color:#14080A}
+.btn-laser:hover{background:#FF6156}
+.btn-linea{border-color:var(--linea-2);background:var(--panel)}
+.btn-linea:hover{border-color:var(--texto)}
+.btn-wa{background:var(--wa);color:#fff}
+.btn-wa:hover{background:#24B263}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+.botones{display:flex;flex-wrap:wrap;gap:12px}
+
+/* Panel HUD con esquinas */
+.hud{position:relative;background:var(--panel);border:1px solid var(--linea)}
+.hud::before,.hud::after{content:"";position:absolute;width:14px;height:14px;pointer-events:none}
+.hud::before{top:-1px;left:-1px;border-top:2px solid var(--laser);border-left:2px solid var(--laser)}
+.hud::after{bottom:-1px;right:-1px;border-bottom:2px solid var(--laser);border-right:2px solid var(--laser)}
+.hud.ambar::before,.hud.ambar::after{border-color:var(--ambar)}
+.hud-cab{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--linea);font-family:var(--f-mono);font-size:12px;letter-spacing:1px;color:var(--suave);text-transform:uppercase}
+.punto{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);margin-right:8px;box-shadow:0 0 8px var(--ok)}
+
+/* Encabezado */
+.aviso{background:var(--panel);border-bottom:1px solid var(--linea);font-family:var(--f-mono);font-size:12px;letter-spacing:1px;color:var(--suave);text-transform:uppercase}
+.aviso .contenedor{display:flex;gap:28px;padding-block:8px;overflow-x:auto;white-space:nowrap;scrollbar-width:none}
+.aviso b{color:var(--ambar);font-weight:500}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:50;background:rgba(10,13,18,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--linea)}
+.barra{display:flex;align-items:center;justify-content:space-between;gap:18px}
+.logo{display:flex;align-items:center;text-decoration:none;padding-block:8px}
+.pestanas{display:flex;align-items:stretch;gap:2px;overflow-x:auto;scrollbar-width:none}
+.pestanas a{display:flex;align-items:center;gap:8px;padding:20px 12px;color:var(--suave);text-decoration:none;font-family:var(--f-display);font-weight:600;font-size:14.5px;letter-spacing:1px;text-transform:uppercase;white-space:nowrap;border-bottom:2px solid transparent}
+.pestanas a:hover{color:var(--texto)}
+.pestanas a[aria-current="page"]{color:var(--texto);border-bottom-color:var(--laser)}
+.pestanas a[aria-current="page"] svg{color:var(--laser)}
+.wa-cab{display:inline-flex;align-items:center;gap:8px;min-height:42px;padding:8px 14px;border:1px solid var(--wa);color:#5BE08F;text-decoration:none;font-family:var(--f-display);font-weight:600;font-size:14px;letter-spacing:1px;text-transform:uppercase;white-space:nowrap}
+.wa-cab:hover{background:rgba(31,157,85,.15)}
+
+/* Vistas por pestaña */
+[data-vista]{display:none}
+[data-vista].activa{display:block}
+
+/* Portada */
+.portada{position:relative;overflow:hidden;padding-block:56px 72px}
+.portada .contenedor{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:48px;align-items:center}
+.portada-texto{display:flex;flex-direction:column;gap:24px;min-width:0}
+.portada h1{font-size:clamp(40px,5.8vw,74px);line-height:.95;text-transform:uppercase;font-weight:700}
+.portada h1 .l{color:var(--laser)}
+.portada h1 .a{color:var(--ambar)}
+.portada-texto>p{font-size:18px;color:var(--suave);max-width:52ch}
+.lectura{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--linea);background:var(--panel)}
+.lectura div{padding:14px 16px;border-right:1px solid var(--linea);min-width:0}
+.lectura div:last-child{border-right:0}
+.lectura b{display:block;font-family:var(--f-display);font-size:22px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.lectura span{font-family:var(--f-mono);font-size:11.5px;letter-spacing:1px;text-transform:uppercase;color:var(--suave)}
+.visor-caja{min-width:0}
+.visor-marco{position:relative}
+.visor{width:100%;aspect-ratio:4/3;display:block;cursor:grab;touch-action:none;background:radial-gradient(circle at 50% 45%,#1A202B,#0C0F14 75%)}
+.visor:active{cursor:grabbing}
+.barrido{position:absolute;left:0;right:0;top:0;height:2px;background:var(--laser);box-shadow:0 0 14px 2px var(--laser);opacity:.75;pointer-events:none;animation:barrer 5.5s ease-in-out infinite}
+@keyframes barrer{0%{top:4%}50%{top:94%}100%{top:4%}}
+.cruz{position:absolute;font-family:var(--f-mono);font-size:11px;color:var(--suave);letter-spacing:1px;pointer-events:none}
+.cruz.a{top:10px;left:12px}.cruz.b{top:10px;right:12px}.cruz.c{bottom:10px;left:12px}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;padding:12px 14px;border-top:1px solid var(--linea)}
+.tab{background:transparent;border:1px solid var(--linea-2);color:var(--suave);padding:8px 14px;min-height:40px;font-family:var(--f-mono);font-size:13px;letter-spacing:.5px;cursor:pointer}
+.tab:hover{color:var(--texto)}
+.tab[aria-pressed="true"]{border-color:var(--ambar);color:var(--ambar);background:var(--ambar-suave)}
+.ltab{background:transparent;border:1px solid var(--linea-2);color:var(--suave);padding:8px 14px;min-height:40px;font-family:var(--f-mono);font-size:13px;letter-spacing:.5px;cursor:pointer}
+.ltab:hover{color:var(--texto)}
+.subir-foto{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:0 14px 14px}
+.subir-foto label{flex-direction:row}
+.ltab[aria-pressed="true"]{border-color:var(--laser);color:var(--laser);background:var(--laser-suave)}
+.visor-nota{padding:0 14px 12px;font-family:var(--f-mono);font-size:12px;color:var(--suave)}
+
+/* Línea del tiempo */
+.tiempo{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;margin-top:40px;border-top:1px solid var(--linea-2)}
+.hito{padding:26px 24px 0 0;position:relative;min-width:0}
+.hito::before{content:"";position:absolute;top:-5px;left:0;width:9px;height:9px;background:var(--suave);transform:rotate(45deg)}
+.hito.hoy::before{background:var(--laser);box-shadow:0 0 12px var(--laser)}
+.hito .anio{font-family:var(--f-display);font-size:44px;font-weight:700;line-height:1}
+.hito.hoy .anio{color:var(--laser)}
+.hito h3{font-size:18px;margin-top:10px;text-transform:uppercase}
+.hito p{color:var(--suave);margin-top:8px;max-width:38ch}
+
+/* Tabla comparativa */
+.tabla-caja{overflow-x:auto;margin-top:36px}
+.tabla{width:100%;min-width:680px;border-collapse:collapse;font-size:15px}
+.tabla th,.tabla td{padding:16px 18px;text-align:left;border-bottom:1px solid var(--linea);vertical-align:top}
+.tabla thead th{font-family:var(--f-display);font-size:18px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--linea-2)}
+.tabla thead th small{display:block;font-family:var(--f-mono);font-size:11.5px;color:var(--suave);letter-spacing:1px;margin-top:4px;font-weight:400}
+.tabla tbody th{font-family:var(--f-mono);font-size:12.5px;letter-spacing:1px;text-transform:uppercase;color:var(--suave);font-weight:500;width:22%}
+.tabla td{font-variant-numeric:tabular-nums}
+.tabla .col-a{color:var(--ambar)}
+.tabla .col-l{color:var(--laser)}
+
+/* Cadena de proceso */
+.cadena{display:flex;flex-wrap:wrap;align-items:stretch;gap:0;margin-top:36px}
+.eslabon{flex:1 1 200px;min-width:0;padding:22px;display:flex;flex-direction:column;gap:10px}
+.eslabon .n{font-family:var(--f-mono);font-size:12px;color:var(--suave);letter-spacing:1px}
+.eslabon h3{font-size:19px;text-transform:uppercase}
+.eslabon p{color:var(--suave);font-size:15px}
+.mas{display:flex;align-items:center;justify-content:center;width:40px;font-family:var(--f-display);font-size:26px;color:var(--laser)}
+.combos{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-top:20px}
+.combo{padding:20px;display:flex;flex-direction:column;gap:8px}
+.combo h3{font-size:17px;text-transform:uppercase}
+.combo p{color:var(--suave);font-size:15px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--f-mono);font-size:11.5px;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;border:1px solid}
+.chip.a{color:var(--ambar);border-color:rgba(255,181,71,.4)}
+.chip.l{color:var(--laser);border-color:rgba(255,68,56,.45)}
+
+/* Catálogo */
+.productos{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;margin-top:36px}
+.producto{display:flex;flex-direction:column;min-width:0;transition:transform .2s,border-color .2s}
+.producto:hover{transform:translateY(-3px);border-color:var(--linea-2)}
+.producto .img{position:relative;aspect-ratio:4/3;background:var(--panel-2);overflow:hidden;border-bottom:1px solid var(--linea);display:flex;align-items:center;justify-content:center}
+.producto .img img{width:100%;height:100%;object-fit:cover}
+.producto .img svg{width:46%;height:46%}
+.producto .img .ref{position:absolute;top:8px;left:10px;font-family:var(--f-mono);font-size:11px;letter-spacing:1px;color:#fff;background:rgba(10,13,18,.7);padding:2px 6px}
+.producto .cuerpo{padding:18px;display:flex;flex-direction:column;gap:8px;flex-grow:1}
+.producto h3{font-size:18px;text-transform:uppercase}
+.producto p{color:var(--suave);font-size:15px;flex-grow:1}
+.producto .pie{display:flex;justify-content:space-between;align-items:center;gap:10px;padding-top:8px;border-top:1px dashed var(--linea);font-family:var(--f-mono);font-size:13.5px}
+.producto .pie a{color:var(--laser);text-decoration:none;font-weight:500;letter-spacing:1px;text-transform:uppercase}
+.producto .pie a:hover{text-decoration:underline}
+
+/* Cifras */
+.cifras{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin-top:40px;border-top:1px solid var(--linea-2);border-bottom:1px solid var(--linea-2)}
+.cifra{padding:28px 18px;border-right:1px solid var(--linea);min-width:0}
+.cifra:last-child{border-right:0}
+.cifra b{display:block;font-family:var(--f-display);font-size:clamp(34px,4.6vw,56px);line-height:1;font-weight:700;font-variant-numeric:tabular-nums}
+.cifra span{display:block;margin-top:10px;color:var(--suave);font-size:14.5px}
+
+/* Pasos */
+.pasos{list-style:none;margin:32px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.pasos li{padding:22px;display:flex;flex-direction:column;gap:10px}
+.pasos .num{font-family:var(--f-mono);font-size:13px;letter-spacing:2px;color:var(--ambar)}
+.pasos h3{font-size:19px;text-transform:uppercase}
+.pasos p{color:var(--suave);font-size:15px}
+
+/* Cotizadores */
+.cotizador{display:flex;flex-wrap:wrap;gap:20px;margin-top:32px}
+.cot-izq{flex:1 1 440px;min-width:0;display:flex;flex-direction:column;gap:12px}
+.cot-der{flex:1 1 380px;min-width:0;padding:22px;display:flex;flex-direction:column;gap:16px}
+.soltar{position:relative;aspect-ratio:4/3;max-width:100%;border:1px dashed var(--linea-2);background:var(--panel);display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden;cursor:pointer}
+.soltar.encima{border-color:var(--ambar);background:var(--ambar-suave)}
+.soltar canvas{position:absolute;inset:0;width:100%;height:100%;display:none;cursor:grab;touch-action:none}
+.soltar.cargado canvas{display:block}
+.soltar.cargado .soltar-txt{display:none}
+.soltar-txt{display:flex;flex-direction:column;align-items:center;gap:10px;padding:24px}
+.soltar-txt strong{font-family:var(--f-display);font-size:22px;text-transform:uppercase}
+.soltar-txt span{color:var(--suave);font-size:14px}
+.archivo-info{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;font-family:var(--f-mono);font-size:13px;color:var(--suave)}
+.campos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+label{display:flex;flex-direction:column;gap:6px;font-family:var(--f-mono);font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--suave)}
+input,select,textarea{padding:12px;border:1px solid var(--linea-2);background:var(--fondo);color:var(--texto);font:inherit;font-family:var(--f-texto);font-size:15px;letter-spacing:0;text-transform:none;border-radius:0}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--ambar);outline-offset:0}
+.completo{grid-column:1/-1}
+.resumen{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 16px;margin:0;padding:14px;background:var(--fondo);border:1px solid var(--linea);font-size:14.5px}
+.resumen dt{color:var(--suave);font-family:var(--f-mono);font-size:12.5px;text-transform:uppercase;letter-spacing:1px}
+.resumen dd{margin:0;text-align:right;font-variant-numeric:tabular-nums;font-weight:500}
+.total{display:flex;justify-content:space-between;align-items:baseline;gap:10px;border-top:1px solid var(--linea);padding-top:14px}
+.total span{font-family:var(--f-mono);font-size:12.5px;letter-spacing:1px;text-transform:uppercase;color:var(--suave)}
+.total strong{font-family:var(--f-display);font-size:38px;font-variant-numeric:tabular-nums}
+.alerta{font-size:13.5px;color:var(--ambar);margin:0;display:none}
+.nota{font-size:13px;color:var(--suave)}
+.enlace-wa{display:none}
+.enlace-wa.listo{display:inline-flex}
+
+/* Láser */
+.laser-cab{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:40px;align-items:center}
+.laser-arte{min-width:0}
+.laser-arte canvas{width:100%;aspect-ratio:4/3;display:block;max-width:100%;background:#0C0F14}
+.materiales-l{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-top:32px}
+.mat-l{padding:18px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.mat-l .tipo{display:flex;gap:6px;flex-wrap:wrap}
+.mat-l h3{font-size:17px;text-transform:uppercase}
+.mat-l p{color:var(--suave);font-size:14.5px}
+.no-hace{margin-top:20px;padding:18px 20px;border:1px solid rgba(255,181,71,.35);background:var(--ambar-suave);display:flex;flex-direction:column;gap:6px}
+.no-hace strong{font-family:var(--f-display);text-transform:uppercase;color:var(--ambar);letter-spacing:.5px}
+.no-hace p{color:var(--texto);font-size:15px}
+
+/* Maquetas */
+.maq-top{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:40px;align-items:center}
+.maq-texto{display:flex;flex-direction:column;gap:18px;min-width:0}
+.maq-texto p{color:var(--suave);font-size:17px}
+.maq-foto{margin:0;min-width:0}
+.maq-foto img{width:100%;height:auto}
+.maq-foto figcaption{padding:10px 14px;font-family:var(--f-mono);font-size:12px;letter-spacing:1px;color:var(--suave);text-transform:uppercase;border-top:1px solid var(--linea)}
+.maq-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-top:32px}
+.maq-card{padding:20px;display:flex;flex-direction:column;gap:10px}
+.maq-card h3{font-size:17px;text-transform:uppercase}
+.maq-card ul{margin:0;padding-left:18px;color:var(--suave);font-size:15px;display:flex;flex-direction:column;gap:4px}
+.escalas{display:flex;flex-wrap:wrap;gap:8px}
+.escalas span{font-family:var(--f-mono);font-size:14px;padding:4px 10px;border:1px solid var(--linea-2)}
+
+/* Materiales */
+.filamentos{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin-top:28px}
+.fil{padding:20px;display:flex;flex-direction:column;gap:8px}
+.fil .muestra{width:100%;height:6px}
+.fil h3{font-size:22px}
+.fil p{color:var(--suave);font-size:15px}
+.fil small{font-family:var(--f-mono);font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--ambar)}
+
+/* Ayuda */
+.pagina-titulo{display:flex;flex-direction:column;gap:12px;max-width:760px;margin-bottom:32px}
+.pagina-titulo h1{font-size:clamp(34px,4.6vw,54px);text-transform:uppercase;line-height:1}
+.pagina-titulo p{color:var(--suave);font-size:17px}
+.faq{max-width:860px}
+.faq-grupo{font-size:15px;font-family:var(--f-mono);font-weight:500;letter-spacing:2px;text-transform:uppercase;color:var(--suave);margin:32px 0 12px}
+details{border:1px solid var(--linea);background:var(--panel);padding:18px 20px;margin-bottom:10px}
+details[open]{border-color:var(--linea-2)}
+summary{font-family:var(--f-display);font-weight:600;font-size:17px;cursor:pointer;letter-spacing:.3px}
+summary::marker{color:var(--laser)}
+details p{margin-top:10px;color:var(--suave)}
+.no-encontraste{margin-top:40px;padding:30px 24px;display:flex;flex-direction:column;align-items:flex-start;gap:12px}
+.no-encontraste h2{font-size:24px;text-transform:uppercase}
+.no-encontraste p{color:var(--suave)}
+
+/* Contacto */
+.contacto-grid{display:flex;flex-wrap:wrap;gap:20px}
+.contacto-form{flex:1 1 440px;min-width:0;padding:24px;display:flex;flex-direction:column;gap:16px}
+.contacto-info{flex:1 1 320px;min-width:0;display:flex;flex-direction:column;gap:12px}
+.info-item{display:flex;gap:14px;align-items:flex-start;padding:16px}
+.info-item>svg{color:var(--laser);flex:none;margin-top:2px}
+.info-item strong{display:block;font-family:var(--f-mono);font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--suave);font-weight:500}
+.info-item span,.info-item a{color:var(--texto);text-decoration:none;word-break:break-word}
+.mapa{flex-grow:1;min-height:180px;border:1px dashed var(--linea-2);display:flex;align-items:center;justify-content:center;text-align:center;padding:20px;color:var(--suave);font-size:14px}
+
+/* Llamado final */
+.cta{padding:44px;display:flex;flex-wrap:wrap;gap:24px;align-items:center;justify-content:space-between;background:linear-gradient(110deg,var(--laser-suave),transparent 60%),var(--panel)}
+.cta h2{font-size:clamp(28px,3.6vw,42px);text-transform:uppercase;max-width:20ch}
+
+/* Pie */
+footer{margin-top:96px;border-top:1px solid var(--linea);background:var(--panel);font-size:14.5px;color:var(--suave)}
+.pie-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:32px;padding-block:48px 28px}
+.pie-grid h4{margin:0 0 12px;font-family:var(--f-mono);font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--texto);font-weight:500}
+.pie-grid a{display:block;text-decoration:none;margin-bottom:8px}
+.pie-grid a:hover{color:var(--texto)}
+.legal{border-top:1px solid var(--linea);padding-block:16px 24px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px;font-family:var(--f-mono);font-size:12px;letter-spacing:1px}
+
+.wa-flotante{position:fixed;right:calc(18px + env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));width:58px;height:58px;border-radius:50%;background:var(--wa);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 22px rgba(0,0,0,.5);z-index:40}
+
+@media (max-width:1300px){
+  .barra{flex-wrap:wrap;gap:0}
+  .pestanas{order:3;width:100%}
+  .pestanas a{padding:12px 10px}
+}
+@media (max-width:900px){
+  .portada .contenedor,.laser-cab,.maq-top{grid-template-columns:minmax(0,1fr)}
+  .tiempo{grid-template-columns:minmax(0,1fr);border-top:0;border-left:1px solid var(--linea-2);gap:28px}
+  .hito{padding:0 0 0 24px}
+  .hito::before{top:6px;left:-5px}
+  .cifras{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cifra:nth-child(2){border-right:0}
+  .cifra:nth-child(-n+2){border-bottom:1px solid var(--linea)}
+  .mas{width:100%;height:30px}
+}
+@media (max-width:560px){
+  .lectura{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .lectura div:nth-child(2){border-right:0}
+  .lectura div:nth-child(-n+2){border-bottom:1px solid var(--linea)}
+  .campos{grid-template-columns:minmax(0,1fr)}
+  .cta{padding:26px}
+  section{padding-block:72px 0}
+  .wa-cab span{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  .barrido{animation:none;display:none}
+  .producto{transition:none}
+  html{scroll-behavior:auto}
+}
+</style>
+</head>
+<body>
+
+<!-- ====== AVISO ====== -->
+<div class="aviso">
+  <div class="contenedor">
+    <span><b>●</b> Taller en línea · [TU CIUDAD]</span>
+    <span>Impresión 3D · Grabado y corte láser · Maquetas</span>
+    <span>Envíos a todo México</span>
+    <span>Descuento por mayoreo</span>
+  </div>
+</div>
+
+<!-- ====== ENCABEZADO ====== -->
+<header>
+  <div class="barra contenedor">
+    <a href="#inicio" class="logo" aria-label="RM 3D Design, inicio">
+      <svg width="140" height="52" viewBox="0 0 460 220" role="img" aria-label="RM 3D Design">
+        <defs><clipPath id="topH"><polygon points="82,92 140,124 82,156 24,124"/></clipPath></defs>
+        <polygon points="24,124 82,156 82,212 24,180" fill="#E6E9EF"/>
+        <g stroke="#B8BECB" stroke-width="2"><line x1="24" y1="132" x2="82" y2="164"/><line x1="24" y1="140" x2="82" y2="172"/><line x1="24" y1="148" x2="82" y2="180"/><line x1="24" y1="156" x2="82" y2="188"/><line x1="24" y1="164" x2="82" y2="196"/><line x1="24" y1="172" x2="82" y2="204"/></g>
+        <polygon points="140,124 82,156 82,212 140,180" fill="#6B7383"/>
+        <polygon points="82,92 140,124 82,156 24,124" fill="#1A202B"/>
+        <g clip-path="url(#topH)" stroke="#FF4438" stroke-width="2.5"><line x1="53" y1="140" x2="111" y2="108"/><line x1="67.5" y1="148" x2="125.5" y2="116"/><line x1="53" y1="108" x2="111" y2="140"/><line x1="67.5" y1="100" x2="125.5" y2="132"/></g>
+        <polygon points="24,124 82,92 82,156" fill="#FF4438"/>
+        <polygon points="82,92 140,124 82,156 24,124" fill="none" stroke="#FF4438" stroke-width="3"/>
+        <rect x="66" y="10" width="32" height="34" rx="3" fill="#E6E9EF"/>
+        <g fill="#0A0D12"><rect x="66" y="16" width="32" height="2.5"/><rect x="66" y="23" width="32" height="2.5"/><rect x="66" y="30" width="32" height="2.5"/><rect x="66" y="37" width="32" height="2.5"/></g>
+        <rect x="60" y="46" width="44" height="22" rx="3" fill="#E6E9EF"/>
+        <rect x="66" y="52" width="9" height="10" rx="1.5" fill="#FF4438"/>
+        <path d="M70 68 H94 L86 92 H78 Z" fill="#E6E9EF"/>
+        <line x1="82" y1="96" x2="82" y2="122" stroke="#FFB547" stroke-width="4" stroke-linecap="round"/>
+        <text x="162" y="160" font-family="Chakra Petch, sans-serif" font-weight="700" font-size="120" fill="#E6E9EF" letter-spacing="-2">RM</text>
+        <text x="166" y="202" font-family="IBM Plex Mono, monospace" font-weight="500" font-size="24" fill="#FF4438" letter-spacing="7">3D DESIGN</text>
+      </svg>
+    </a>
+    <nav aria-label="Principal" class="pestanas">
+      <a href="#inicio" data-tab="inicio"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/></svg>Inicio</a>
+      <a href="#impresion" data-tab="impresion"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2 3 7v10l9 5 9-5V7z"/><path d="M3 7l9 5 9-5M12 12v10"/></svg>Impresión 3D</a>
+      <a href="#laser" data-tab="laser"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2v7"/><path d="M8 5h8"/><path d="M12 9 6 21h12z"/></svg>Láser</a>
+      <a href="#maquetas" data-tab="maquetas"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 21h18M5 21V8l7-4 7 4v13"/><path d="M9 21v-5h6v5"/></svg>Maquetas</a>
+      <a href="#materiales" data-tab="materiales"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></svg>Materiales</a>
+      <a href="#contacto" data-tab="contacto"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="14"/><path d="m3 7 9 6 9-6"/></svg>Contacto</a>
+      <a href="#ayuda" data-tab="ayuda"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7M12 17h.01"/></svg>Ayuda</a>
+    </nav>
+    <a href="#" class="wa-cab js-wa" data-msg="Hola RM 3D Design, quiero información."><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12a9 9 0 0 1-13.5 7.8L3 21l1.2-4.5A9 9 0 1 1 21 12z"/></svg><span>WhatsApp</span></a>
+  </div>
+</header>
+
+<main>
+<!-- ================= INICIO ================= -->
+<section class="portada" data-vista="inicio" style="padding-block:56px 72px">
+  <div class="contenedor">
+    <div class="portada-texto">
+      <span class="etiqueta">Fabricación digital · [TU CIUDAD]</span>
+      <h1>Lo imaginas.<br><span class="a">Lo imprimimos.</span><br><span class="l">Lo grabamos.</span></h1>
+      <p>Impresión 3D, grabado y corte láser y maquetas a escala en un mismo taller. Sube tu archivo, conoce el precio al momento y recíbelo en tu puerta.</p>
+      <div class="botones">
+        <a href="#impresion" class="btn btn-laser">Cotizar impresión 3D</a>
+        <a href="#laser" class="btn btn-linea">Cotizar grabado láser</a>
+      </div>
+      <div class="lectura" aria-label="Capacidades del taller">
+        <div><b>256³</b><span>mm · volumen 3D</span></div>
+        <div><b>400×415</b><span>mm · área láser</span></div>
+        <div><b>0.12</b><span>mm · capa mínima</span></div>
+        <div><b>455</b><span>nm · láser de diodo</span></div>
+      </div>
+    </div>
+    <div class="visor-caja hud ambar">
+      <div class="hud-cab"><span><span class="punto"></span>Visor 3D en vivo</span><span class="mono" id="hud-modelo">MOD · PABELLÓN</span></div>
+      <div class="visor-marco">
+        <canvas id="visor-ejemplos" class="visor" aria-label="Visor 3D de piezas de ejemplo. Arrastra para girar."></canvas>
+        <div class="barrido" aria-hidden="true"></div>
+        <span class="cruz a" aria-hidden="true">X 000.00</span><span class="cruz b" aria-hidden="true">Y 000.00</span><span class="cruz c" aria-hidden="true">Z ▲ CAPA 0.12</span>
+      </div>
+      <div class="tabs" role="group" aria-label="Piezas de ejemplo">
+        <button class="tab" data-modelo="pabellon" aria-pressed="true">Pabellón arquitectónico</button>
+        <button class="tab" data-modelo="torre" aria-pressed="false">Torre paramétrica</button>
+        <button class="tab" data-modelo="soporte" aria-pressed="false">Soporte técnico</button>
+      </div>
+      <p class="visor-nota">Arrastra para girar · rueda o pellizco para acercar</p>
+    </div>
+  </div>
+</section>
+
+<section data-vista="inicio" style="padding-block:40px 0">
+  <div class="contenedor">
+    <span class="etiqueta">¿Cuál es el futuro de la fabricación?</span>
+    <h2 class="h2">De la fábrica a tu colonia</h2>
+    <div class="tiempo">
+      <div class="hito"><div class="anio">1984</div><h3>Nace la impresión 3D</h3><p>Chuck Hull patenta la estereolitografía. Fabricar un prototipo cuesta semanas y una máquina industrial.</p></div>
+      <div class="hito"><div class="anio">2009</div><h3>Se libera la tecnología</h3><p>Vence la patente del FDM, la impresión con filamento. Aparecen impresoras accesibles para talleres y escuelas.</p></div>
+      <div class="hito hoy"><div class="anio">Hoy</div><h3>Impresión + láser en un taller</h3><p>Máquinas rápidas y precisas trabajan juntas: una construye en volumen, la otra graba y corta en plano. Tu pieza está lista en días.</p></div>
+    </div>
+  </div>
+</section>
+
+<section data-vista="inicio">
+  <div class="contenedor">
+    <span class="etiqueta">Dos tecnologías · un taller</span>
+    <h2 class="h2">Una construye. La otra graba.</h2>
+    <div class="tabla-caja">
+      <table class="tabla">
+        <thead><tr><th scope="col"><span class="mono" style="font-size:12px;color:var(--suave)">Especificación</span></th><th scope="col" class="col-a">Impresión 3D<small>Bambu Lab P2S</small></th><th scope="col" class="col-l">Grabado y corte láser<small>Creality Falcon2</small></th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Tecnología</th><td>Filamento fundido (FDM), capa por capa</td><td>Láser de diodo azul, 455 nm</td></tr>
+          <tr><th scope="row">Área de trabajo</th><td>256 × 256 × 256 mm</td><td>400 × 415 mm</td></tr>
+          <tr><th scope="row">Precisión</th><td>Capas desde 0.12 mm</td><td>Grabado de fotos, textos y vectores</td></tr>
+          <tr><th scope="row">Materiales</th><td>PLA, PETG, ASA, TPU y filamentos con fibra de carbono</td><td>Madera, MDF, bambú, piel, acrílico de color, cartón y marcado de metal</td></tr>
+          <tr><th scope="row">Ideal para</th><td>Piezas funcionales, prototipos, maquetas, figuras y moldes</td><td>Letreros, personalización, cortes planos, bases de maqueta y regalos</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section data-vista="inicio">
+  <div class="contenedor">
+    <span class="etiqueta">Proceso combinado</span>
+    <h2 class="h2">Un archivo, dos máquinas</h2>
+    <div class="cadena">
+      <div class="eslabon hud"><span class="n">PASO 1</span><h3>Diseño</h3><p>Nos mandas tu STL, tu logo o una foto. Si no tienes archivo, lo modelamos.</p></div>
+      <div class="mas" aria-hidden="true">+</div>
+      <div class="eslabon hud ambar"><span class="n">PASO 2</span><h3>Impresión 3D</h3><p>Construimos el volumen: la pieza, la figura o el edificio de la maqueta.</p></div>
+      <div class="mas" aria-hidden="true">+</div>
+      <div class="eslabon hud"><span class="n">PASO 3</span><h3>Láser</h3><p>Grabamos nombres, logos o fotos y cortamos bases, cajas y placas.</p></div>
+      <div class="mas" aria-hidden="true">=</div>
+      <div class="eslabon hud ambar"><span class="n">ENTREGA</span><h3>Producto terminado</h3><p>Ensamblado, revisado y listo para regalar, vender o presentar.</p></div>
+    </div>
+    <div class="combos">
+      <div class="combo hud"><div class="chips"><span class="chip a">3D</span><span class="chip l">Láser</span></div><h3>Maqueta completa</h3><p>Edificio impreso sobre base de MDF cortada y grabada con el plano del terreno.</p></div>
+      <div class="combo hud"><div class="chips"><span class="chip a">3D</span><span class="chip l">Láser</span></div><h3>Reconocimientos y trofeos</h3><p>Figura impresa con placa de madera o acrílico grabada con nombre y fecha.</p></div>
+      <div class="combo hud"><div class="chips"><span class="chip l">Láser</span><span class="chip a">3D</span></div><h3>Cajas de regalo</h3><p>Caja de MDF cortada a medida con interior impreso para acomodar cada pieza.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="catalogo" data-vista="inicio">
+  <div class="contenedor">
+    <span class="etiqueta">Catálogo</span>
+    <h2 class="h2">Lo que fabricamos</h2>
+    <div class="productos">
+      <article class="producto hud"><div class="img"><img src="img/piezas-funcionales.jpg" alt="Engranes y soporte impresos en 3D" loading="lazy"><span class="ref">3D · 01</span></div><div class="cuerpo"><h3>Piezas funcionales</h3><p>Engranes, soportes, clips y refacciones de auto o electrodomésticos.</p><div class="pie"><span>Cotizador</span><a href="#impresion">Cotizar</a></div></div></article>
+      <article class="producto hud"><div class="img"><img src="img/prototipo.jpg" alt="Prototipo de mano mecánica impresa en 3D" loading="lazy"><span class="ref">3D · 02</span></div><div class="cuerpo"><h3>Prototipos</h3><p>Carcasas y mecanismos para probar tu idea antes de fabricar en serie.</p><div class="pie"><span>Cotizador</span><a href="#impresion">Cotizar</a></div></div></article>
+      <article class="producto hud"><div class="img"><img src="img/maqueta-conjunto.jpg" alt="Maqueta arquitectónica de conjunto habitacional" loading="lazy"><span class="ref">3D + LÁSER · 03</span></div><div class="cuerpo"><h3>Maquetas</h3><p>Arquitectura y urbanismo a escala, con base cortada y grabada en láser.</p><div class="pie"><span>Por proyecto</span><a href="#maquetas">Ver más</a></div></div></article>
+      <article class="producto hud"><div class="img"><img src="img/llaveros.jpg" alt="Llaveros personalizados con nombres en colores" loading="lazy"><span class="ref">3D · 04</span></div><div class="cuerpo"><h3>Llaveros personalizados</h3><p>Con nombre, logo o frase. Desde 1 pieza hasta mayoreo para eventos.</p><div class="pie"><span>Desde $[PRECIO]</span><a href="#" class="js-wa" data-msg="Hola RM 3D Design, quiero cotizar llaveros personalizados. Cantidad: ___ · Texto: ___">Pedir</a></div></div></article>
+      <article class="producto hud"><div class="img"><svg viewBox="0 0 120 120" fill="none" stroke="#FF4438" stroke-width="2" aria-hidden="true"><rect x="14" y="26" width="92" height="68"/><path d="M26 80h68M26 70h44" stroke="#98A1B2"/><path d="M30 40c8 0 8 12 16 12s8-12 16-12 8 12 16 12 8-12 16-12"/><circle cx="60" cy="10" r="3" fill="#FF4438"/><path d="M60 13v13" stroke-dasharray="3 3"/></svg><span class="ref">LÁSER · 05</span></div><div class="cuerpo"><h3>Letreros y señalética</h3><p>Madera, MDF o acrílico de color, cortados y grabados con tu logo.</p><div class="pie"><span>Desde $[PRECIO]</span><a href="#laser">Cotizar</a></div></div></article>
+      <article class="producto hud"><div class="img"><svg viewBox="0 0 120 120" fill="none" stroke="#FF4438" stroke-width="2" aria-hidden="true"><path d="M40 20h40v80H40z"/><path d="M40 30h40M40 90h40" stroke="#98A1B2"/><path d="M50 52h20M50 60h20M54 68h12"/><circle cx="60" cy="8" r="3" fill="#FF4438"/><path d="M60 11v9" stroke-dasharray="3 3"/></svg><span class="ref">LÁSER · 06</span></div><div class="cuerpo"><h3>Grabado en objetos</h3><p>Termos y placas de acero, piel, tablas de madera y bambú con nombre, logo o foto.</p><div class="pie"><span>Desde $[PRECIO]</span><a href="#laser">Cotizar</a></div></div></article>
+      <article class="producto hud"><div class="img"><img src="img/cuadro.jpg" alt="Cuadro impreso en 3D con marco" loading="lazy"><span class="ref">3D · 07</span></div><div class="cuerpo"><h3>Litofanías y cuadros</h3><p>Tu foto en relieve que aparece con luz, con marco y luz LED.</p><div class="pie"><span>Desde $[PRECIO]</span><a href="#" class="js-wa" data-msg="Hola RM 3D Design, quiero una litofanía con mi foto.">Pedir</a></div></div></article>
+      <article class="producto hud"><div class="img"><img src="img/evento-boda.jpg" alt="Figura de novios para pastel de boda" loading="lazy" style="object-position:center 25%"><span class="ref">3D · 08</span></div><div class="cuerpo"><h3>Figuras y eventos</h3><p>Figuras personalizadas y recuerdos para bodas, XV años y bautizos.</p><div class="pie"><span>Desde $[PRECIO]</span><a href="#" class="js-wa" data-msg="Hola RM 3D Design, quiero cotizar recuerdos para un evento. Tipo de evento: ___ · Cantidad: ___">Pedir</a></div></div></article>
+    </div>
+  </div>
+</section>
+
+<section data-vista="inicio">
+  <div class="contenedor">
+    <span class="etiqueta">El taller en números</span>
+    <div class="cifras">
+      <div class="cifra"><b style="color:var(--ambar)">0.12</b><span>mm de capa mínima en impresión 3D</span></div>
+      <div class="cifra"><b>1,660</b><span>cm² de área de grabado láser (40 × 41.5 cm)</span></div>
+      <div class="cifra"><b style="color:var(--laser)">2</b><span>tecnologías para una sola pieza</span></div>
+      <div class="cifra"><b>24/7</b><span>cotizador en línea: sube tu archivo a cualquier hora</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= IMPRESIÓN 3D ================= -->
+<section data-vista="impresion" style="padding-block:56px 0">
+  <div class="contenedor">
+    <div class="pagina-titulo">
+      <span class="etiqueta ambar">Impresión 3D · Bambu Lab P2S</span>
+      <h1>Sube tu STL. Conoce el precio.</h1>
+      <p>El cotizador mide tu pieza y calcula el material en tu propio navegador. Tu archivo no se sube a ningún servidor.</p>
+    </div>
+    <ol class="pasos">
+      <li class="hud ambar"><span class="num">01 / SUBE</span><h3>Tu archivo</h3><p>Arrastra tu STL o prueba con la pieza de ejemplo.</p></li>
+      <li class="hud ambar"><span class="num">02 / CONFIGURA</span><h3>Material y relleno</h3><p>Elige material, relleno, color y cantidad. El precio cambia al instante.</p></li>
+      <li class="hud ambar"><span class="num">03 / CONFIRMA</span><h3>Por WhatsApp</h3><p>Revisamos tu archivo, confirmamos precio y fecha, y arrancamos con tu anticipo.</p></li>
+    </ol>
+  </div>
+</section>
+
+<section id="cotizador" data-vista="impresion" style="padding-block:24px 0">
+  <div class="contenedor">
+    <div class="cotizador">
+      <div class="cot-izq">
+        <label class="soltar hud ambar" id="soltar" for="archivo" style="text-transform:none;letter-spacing:0">
+          <canvas id="visor-stl" aria-label="Vista 3D de tu archivo. Arrastra para girar."></canvas>
+          <span class="soltar-txt">
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#FFB547" stroke-width="1.6" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+            <strong>Arrastra tu archivo STL</strong>
+            <span>o haz clic para elegirlo · máximo 100 MB</span>
+          </span>
+          <input type="file" id="archivo" accept=".stl" style="position:absolute;width:1px;height:1px;opacity:0">
+        </label>
+        <div class="archivo-info">
+          <span id="nombre-archivo">Ningún archivo cargado</span>
+          <button type="button" class="btn btn-linea" id="probar-ejemplo" style="min-height:40px;padding:8px 16px;font-size:13px">Probar con un ejemplo</button>
+        </div>
+      </div>
+      <div class="cot-der hud ambar">
+        <div class="campos">
+          <label for="material">Material
+            <select id="material">
+              <option value="PLA">PLA · maquetas y decoración</option>
+              <option value="PETG">PETG · piezas funcionales</option>
+              <option value="ASA">ASA · exterior y autos</option>
+              <option value="TPU">TPU · flexible</option>
+            </select>
+          </label>
+          <label for="relleno">Relleno
+            <select id="relleno">
+              <option value="ligero">Ligero (15%)</option>
+              <option value="normal" selected>Normal (25%)</option>
+              <option value="resistente">Resistente (50%)</option>
+              <option value="solido">Sólido (100%)</option>
+            </select>
+          </label>
+          <label for="color">Color
+            <select id="color"><option>Blanco</option><option>Negro</option><option>Gris</option><option>Rojo</option><option>Otro (indicar)</option></select>
+          </label>
+          <label for="cantidad">Cantidad<input type="number" id="cantidad" min="1" value="1"></label>
+        </div>
+        <dl class="resumen">
+          <dt>Medidas</dt><dd id="r-medidas">—</dd>
+          <dt>Volumen</dt><dd id="r-volumen">—</dd>
+          <dt>Peso estimado</dt><dd id="r-peso">—</dd>
+          <dt>Precio por pieza</dt><dd id="r-unitario">—</dd>
+        </dl>
+        <p class="alerta" id="alerta-tamano">Tu pieza mide más de 25.6 cm por lado: la imprimiremos en partes y te confirmamos el precio.</p>
+        <div class="total"><span>Total estimado</span><strong id="r-total">$0</strong></div>
+        <button type="button" class="btn btn-wa" id="enviar-cotizacion" disabled>Enviar cotización por WhatsApp</button>
+        <a href="#" class="btn btn-linea enlace-wa" id="enlace-cotizacion" target="_blank" rel="noopener">Abrir WhatsApp con mi cotización</a>
+        <p class="nota">Precio estimado. Lo confirmamos al revisar tu archivo. ¿Tienes 3MF, OBJ o STEP? Envíalo directo por WhatsApp.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= LÁSER ================= -->
+<section data-vista="laser" style="padding-block:56px 0">
+  <div class="contenedor laser-cab">
+    <div class="pagina-titulo" style="margin-bottom:0">
+      <span class="etiqueta">Grabado y corte láser · Creality Falcon2</span>
+      <h1>Graba. Corta. Personaliza.</h1>
+      <p>Grabamos nombres, logos y fotos y cortamos piezas planas en un área de 40 × 41.5 cm. Tú pones la idea, o el objeto, y nosotros el láser.</p>
+      <div class="botones"><a href="#cotizador-laser" class="btn btn-laser">Cotizar grabado</a><a href="#" class="btn btn-linea js-wa" data-msg="Hola RM 3D Design, quiero grabar un objeto que yo llevo. Objeto: ___ · Diseño: ___">Llevo mi propio objeto</a></div>
+    </div>
+    <div class="laser-arte hud">
+      <div class="hud-cab"><span><span class="punto" style="background:var(--laser);box-shadow:0 0 8px var(--laser)"></span><span id="l-hud">Grabado en madera</span></span><span>455 nm</span></div>
+      <!-- Para usar tus propios videos: cambia cada <canvas> por
+           <video src="video/madera.mp4" autoplay muted loop playsinline style="width:100%;display:block"></video>
+           (o video/rotativo.mp4) y guarda los videos en una carpeta "video" junto a index.html -->
+      <canvas id="lienzo-laser" data-panel="madera" aria-label="Animación: el láser graba el logotipo RM sobre madera y corta el contorno"></canvas>
+      <canvas id="lienzo-foto" data-panel="foto" hidden aria-label="Animación: el láser graba la foto de un perrito sobre madera, punto por punto"></canvas>
+      <canvas id="lienzo-rotativo" data-panel="rotativo" hidden aria-label="Animación: un termo negro gira mientras el láser graba un nombre alrededor"></canvas>
+      <div class="tabs" role="group" aria-label="Tipo de trabajo láser">
+        <button class="ltab" data-panel="madera" aria-pressed="true">Grabado en madera</button>
+        <button class="ltab" data-panel="foto" aria-pressed="false">Grabado de foto</button>
+        <button class="ltab" data-panel="rotativo" aria-pressed="false">Grabado 360°</button>
+      </div>
+      <p class="visor-nota" id="l-desc">Grabado y corte sobre madera, MDF, bambú o acrílico: textos, logos y fotos.</p>
+      <div class="subir-foto" id="l-subir" hidden>
+        <label for="l-foto" class="btn btn-linea" style="min-height:40px;padding:8px 16px;font-size:13px;letter-spacing:1px;color:var(--texto)">Probar con mi foto</label>
+        <input type="file" id="l-foto" accept="image/*" style="position:absolute;width:1px;height:1px;opacity:0">
+        <span class="nota">Tu foto se procesa en tu navegador; no se sube a ningún lado.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section data-vista="laser" style="padding-block:72px 0">
+  <div class="contenedor">
+    <span class="etiqueta">Materiales para láser</span>
+    <h2 class="h2">Qué grabamos y qué cortamos</h2>
+    <div class="materiales-l">
+      <div class="mat-l hud"><div class="tipo"><span class="chip l">Grabado</span><span class="chip l">Corte</span></div><h3>Madera y triplay</h3><p>Triplay de basswood, nogal y similares. Letreros, cajas, rompecabezas y piezas de maqueta.</p></div>
+      <div class="mat-l hud"><div class="tipo"><span class="chip l">Grabado</span><span class="chip l">Corte</span></div><h3>MDF</h3><p>El más económico para bases de maqueta, organizadores y plantillas.</p></div>
+      <div class="mat-l hud"><div class="tipo"><span class="chip l">Grabado</span><span class="chip l">Corte</span></div><h3>Bambú</h3><p>Tablas de cocina, porta vasos y regalos con nombre o foto.</p></div>
+      <div class="mat-l hud"><div class="tipo"><span class="chip l">Grabado</span><span class="chip l">Corte</span></div><h3>Piel y cuero</h3><p>Carteras, llaveros, parches y correas. Grabado y corte de piel delgada.</p></div>
+      <div class="mat-l hud"><div class="tipo"><span class="chip l">Grabado</span><span class="chip l">Corte</span></div><h3>Acrílico de color</h3><p>Negro y colores opacos o transparentes con color. Llaveros, letreros y displays.</p></div>
+      <div class="mat-l hud"><div class="tipo"><span class="chip l">Grabado</span><span class="chip l">Corte</span></div><h3>Cartón, papel y fieltro</h3><p>Invitaciones, empaques, prototipos y piezas para manualidades.</p></div>
+      <div class="mat-l hud"><div class="tipo"><span class="chip l">Marcado</span></div><h3>Acero inoxidable</h3><p>Termos, placas y herramientas con nombre o logo. Se marca la superficie, no se corta.</p></div>
+      <div class="mat-l hud"><div class="tipo"><span class="chip l">Grabado</span></div><h3>Aluminio anodizado</h3><p>Tarjetas de metal, placas y estuches. El láser retira la capa de color.</p></div>
+    </div>
+    <div class="no-hace">
+      <strong>Lo que el láser no hace</strong>
+      <p>No corta metal ni vidrio, y el acrílico transparente sin color no absorbe bien el láser azul. Tampoco trabajamos PVC ni vinil: al quemarse sueltan gases tóxicos. Si tienes duda con tu material, pregúntanos antes.</p>
+    </div>
+  </div>
+</section>
+
+<section id="cotizador-laser" data-vista="laser" style="padding-block:72px 0">
+  <div class="contenedor">
+    <span class="etiqueta">Cotizador láser</span>
+    <h2 class="h2">Calcula tu grabado o corte</h2>
+    <p class="sub">Precio estimado por medidas. Para cortes con muchos detalles lo confirmamos al ver tu diseño.</p>
+    <div class="cotizador">
+      <div class="cot-der hud" style="flex:1 1 460px">
+        <div class="campos">
+          <label for="l-material">Material
+            <select id="l-material">
+              <option value="mdf">MDF 3 mm (lo ponemos nosotros)</option>
+              <option value="triplay">Triplay de madera 3 mm (lo ponemos nosotros)</option>
+              <option value="acrilico">Acrílico negro 3 mm (lo ponemos nosotros)</option>
+              <option value="piel">Piel (la llevas tú)</option>
+              <option value="acero">Acero inoxidable · solo marcado (lo llevas tú)</option>
+              <option value="anodizado">Aluminio anodizado · solo grabado (lo llevas tú)</option>
+              <option value="propio">Otro material que llevas tú</option>
+            </select>
+          </label>
+          <label for="l-trabajo">Trabajo
+            <select id="l-trabajo">
+              <option value="grabado">Grabado (texto, logo o foto)</option>
+              <option value="corte">Corte de silueta</option>
+              <option value="ambos" selected>Grabado + corte</option>
+            </select>
+          </label>
+          <label for="l-ancho">Ancho (cm)<input type="number" id="l-ancho" min="1" max="40" step="0.5" value="10"></label>
+          <label for="l-alto">Alto (cm)<input type="number" id="l-alto" min="1" max="41.5" step="0.5" value="6"></label>
+          <label for="l-cobertura">Área grabada
+            <select id="l-cobertura">
+              <option value="0.15">Texto o logo pequeño (~15%)</option>
+              <option value="0.4" selected>Diseño mediano (~40%)</option>
+              <option value="1">Foto o relleno completo (100%)</option>
+            </select>
+          </label>
+          <label for="l-cantidad">Cantidad<input type="number" id="l-cantidad" min="1" value="10"></label>
+        </div>
+        <p class="alerta" id="l-alerta"></p>
+      </div>
+      <div class="cot-der hud" style="flex:1 1 340px">
+        <dl class="resumen">
+          <dt>Pieza</dt><dd id="l-medidas">—</dd>
+          <dt>Área grabada</dt><dd id="l-area">—</dd>
+          <dt>Corte (contorno)</dt><dd id="l-corte">—</dd>
+          <dt>Precio por pieza</dt><dd id="l-unitario">—</dd>
+        </dl>
+        <div class="total"><span>Total estimado</span><strong id="l-total">$0</strong></div>
+        <button type="button" class="btn btn-wa" id="l-enviar">Enviar cotización por WhatsApp</button>
+        <a href="#" class="btn btn-linea enlace-wa" id="l-enlace" target="_blank" rel="noopener">Abrir WhatsApp con mi cotización</a>
+        <p class="nota">Manda tu diseño en SVG, DXF o PDF (vector) para cortes, o JPG/PNG en buena resolución para fotos.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= MAQUETAS ================= -->
+<section id="maquetas" data-vista="maquetas inicio">
+  <div class="contenedor">
+    <div class="maq-top">
+      <div class="maq-texto">
+        <span class="etiqueta ambar">Maquetas arquitectónicas</span>
+        <h2 class="h2">Tu proyecto, a escala y en tus manos</h2>
+        <p>Imprimimos los volúmenes en 3D y cortamos la base, el terreno y los detalles en láser. Para estudiantes de arquitectura, despachos, constructoras e inmobiliarias.</p>
+        <div class="botones">
+          <a href="#" class="btn btn-laser js-wa" data-msg="Hola RM 3D Design, quiero cotizar una maqueta arquitectónica. Escala: ___ · Medida aproximada: ___ · Fecha de entrega: ___">Cotizar mi maqueta</a>
+          <a href="#impresion" class="btn btn-linea">Subir mi STL</a>
+        </div>
+      </div>
+      <figure class="maq-foto hud ambar"><img src="img/proyecto-escala.jpg" alt="Maqueta a escala de casa habitación de dos niveles" loading="lazy"><figcaption>Proyecto a escala · casa habitación de dos niveles</figcaption></figure>
+    </div>
+    <div class="maq-grid">
+      <div class="maq-card hud"><h3>Escalas</h3><div class="escalas"><span>1:50</span><span>1:75</span><span>1:100</span><span>1:200</span><span>1:500</span></div><p style="color:var(--suave);font-size:15px">Las maquetas grandes se imprimen por partes y se ensamblan sobre base cortada en láser.</p></div>
+      <div class="maq-card hud"><h3>Qué enviar</h3><ul><li>SketchUp, Revit, Rhino o ArchiCAD exportado a STL u OBJ</li><li>O tus planos y alzados para modelarlo</li><li>Escala y fecha de entrega</li></ul></div>
+      <div class="maq-card hud"><h3>Acabados</h3><ul><li>Blanco mate volumétrico</li><li>Base de MDF o madera grabada con el terreno</li><li>Árboles y personas a escala</li><li>Niveles desmontables</li></ul></div>
+      <div class="maq-card hud"><h3>Para quién</h3><ul><li>Estudiantes: entregas y exámenes</li><li>Despachos: presentación a clientes</li><li>Inmobiliarias: maquetas de venta</li><li>Constructoras: moldes y prototipos</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= MATERIALES ================= -->
+<section data-vista="materiales" style="padding-block:56px 0">
+  <div class="contenedor">
+    <div class="pagina-titulo">
+      <span class="etiqueta ambar">Materiales</span>
+      <h1>El material correcto para cada pieza</h1>
+      <p>Si no sabes cuál elegir, te lo recomendamos al cotizar.</p>
+    </div>
+    <span class="etiqueta ambar">Filamentos · impresión 3D</span>
+    <div class="filamentos">
+      <div class="fil hud ambar"><span class="muestra" style="background:#E6E9EF"></span><h3>PLA</h3><p>Excelente detalle y acabado. El favorito para maquetas, figuras y prototipos visuales.</p><small>Interior · No expuesto al sol</small></div>
+      <div class="fil hud ambar"><span class="muestra" style="background:#5B8DEF"></span><h3>PETG</h3><p>Resistente y algo flexible. Aguanta golpes, humedad y calor moderado.</p><small>Piezas funcionales · Moldes</small></div>
+      <div class="fil hud ambar"><span class="muestra" style="background:#6B7383"></span><h3>ASA</h3><p>Resiste sol, lluvia y calor sin deformarse ni ponerse amarillo.</p><small>Exterior · Partes de auto</small></div>
+      <div class="fil hud ambar"><span class="muestra" style="background:#FF4438"></span><h3>TPU</h3><p>Flexible como hule: empaques, protectores, topes y bujes.</p><small>Piezas flexibles</small></div>
+    </div>
+    <div class="tabla-caja">
+      <table class="tabla">
+        <thead><tr><th scope="col"><span class="mono" style="font-size:12px;color:var(--suave)">Característica</span></th><th scope="col">PLA</th><th scope="col">PETG</th><th scope="col">ASA</th><th scope="col">TPU</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Detalle y acabado</th><td>Excelente</td><td>Muy bueno</td><td>Bueno</td><td>Regular</td></tr>
+          <tr><th scope="row">Resistencia a golpes</th><td>Media</td><td>Alta</td><td>Alta</td><td>Muy alta</td></tr>
+          <tr><th scope="row">Sol y exterior</th><td>No</td><td>Moderado</td><td>Excelente</td><td>Moderado</td></tr>
+          <tr><th scope="row">Calor</th><td>Bajo</td><td>Medio</td><td>Alto</td><td>Medio</td></tr>
+          <tr><th scope="row">Flexible</th><td>No</td><td>Poco</td><td>No</td><td>Sí</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:40px"><span class="etiqueta">Materiales láser</span></div>
+    <div class="tabla-caja">
+      <table class="tabla">
+        <thead><tr><th scope="col"><span class="mono" style="font-size:12px;color:var(--suave)">Material</span></th><th scope="col">Grabado</th><th scope="col">Corte</th><th scope="col">Ideal para</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Madera, triplay, MDF</th><td>Sí</td><td>Sí</td><td>Letreros, cajas, bases de maqueta</td></tr>
+          <tr><th scope="row">Bambú</th><td>Sí</td><td>Sí, delgado</td><td>Tablas, porta vasos, regalos</td></tr>
+          <tr><th scope="row">Piel</th><td>Sí</td><td>Sí, delgada</td><td>Carteras, llaveros, parches</td></tr>
+          <tr><th scope="row">Acrílico de color</th><td>Sí</td><td>Sí</td><td>Llaveros, displays, letreros</td></tr>
+          <tr><th scope="row">Acero inoxidable</th><td>Marcado</td><td>No</td><td>Termos, placas, herramientas</td></tr>
+          <tr><th scope="row">Aluminio anodizado</th><td>Sí</td><td>No</td><td>Tarjetas y placas de metal</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CONTACTO ================= -->
+<section id="contacto" data-vista="contacto" style="padding-block:56px 0">
+  <div class="contenedor">
+    <div class="pagina-titulo">
+      <span class="etiqueta">Contacto</span>
+      <h1>Hablemos de tu proyecto</h1>
+      <p>Escríbenos para cotizar una pieza, un grabado, una maqueta o un pedido de mayoreo. Respondemos normalmente el mismo día.</p>
+    </div>
+    <div class="contacto-grid">
+      <form id="form-contacto" class="contacto-form hud">
+        <div class="campos">
+          <label for="c-nombre">Nombre<input type="text" id="c-nombre" name="nombre" required autocomplete="name"></label>
+          <label for="c-tel">Teléfono / WhatsApp<input type="tel" id="c-tel" name="tel" autocomplete="tel"></label>
+          <label for="c-correo" class="completo">Correo<input type="email" id="c-correo" name="correo" autocomplete="email"></label>
+          <label for="c-asunto" class="completo">Asunto
+            <select id="c-asunto" name="asunto">
+              <option>Cotización de impresión 3D</option><option>Grabado o corte láser</option><option>Maqueta arquitectónica</option>
+              <option>Modelado 3D</option><option>Llaveros / mayoreo</option><option>Recuerdos para evento</option><option>Otro</option>
+            </select>
+          </label>
+          <label for="c-mensaje" class="completo">Mensaje<textarea id="c-mensaje" name="mensaje" rows="5" required></textarea></label>
+        </div>
+        <div class="botones"><button type="submit" class="btn btn-wa">Enviar por WhatsApp</button><a href="#" class="btn btn-linea enlace-wa" id="c-enlace" target="_blank" rel="noopener">Abrir WhatsApp con mi mensaje</a></div>
+        <p class="nota">Al enviar se abre WhatsApp con tu mensaje ya escrito. Ahí mismo puedes adjuntar fotos o archivos.</p>
+      </form>
+      <div class="contacto-info">
+        <div class="info-item hud"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12a9 9 0 0 1-13.5 7.8L3 21l1.2-4.5A9 9 0 1 1 21 12z"/></svg><div><strong>WhatsApp</strong><span>[TU NÚMERO]</span></div></div>
+        <div class="info-item hud"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="14"/><path d="m3 7 9 6 9-6"/></svg><div><strong>Correo</strong><span>[TU CORREO]</span></div></div>
+        <div class="info-item hud"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><div><strong>Taller</strong><span>[DIRECCIÓN DEL TALLER]</span></div></div>
+        <div class="info-item hud"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><div><strong>Horario</strong><span>Lunes a viernes [HORARIO] · Sábado [HORARIO]</span></div></div>
+        <div class="mapa">[MAPA: pega aquí el código "Insertar un mapa" de Google Maps con la ubicación de tu taller]</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= AYUDA ================= -->
+<section id="ayuda" data-vista="ayuda" style="padding-block:56px 0">
+  <div class="contenedor faq">
+    <div class="pagina-titulo">
+      <span class="etiqueta">Ayuda</span>
+      <h1>Preguntas frecuentes</h1>
+      <p>Respuestas sobre pedidos, archivos, impresión 3D, láser y maquetas.</p>
+    </div>
+    <h2 class="faq-grupo">Pedidos y pagos</h2>
+    <details><summary>¿Cómo hago un pedido?</summary><p>Usa el cotizador de impresión 3D o el de láser, o mándanos tu idea por WhatsApp. Te confirmamos precio y fecha, y con el anticipo arrancamos.</p></details>
+    <details><summary>¿Qué formas de pago aceptan?</summary><p>Transferencia, depósito o Mercado Pago. En pedidos personalizados pedimos 50% de anticipo.</p></details>
+    <details><summary>¿Hacen descuento por mayoreo?</summary><p>Sí. A partir de 10 piezas iguales hay descuento, y es mayor desde 50 piezas.</p></details>
+    <h2 class="faq-grupo">Impresión 3D</h2>
+    <details><summary>¿Qué archivos aceptan?</summary><p>STL en el cotizador. Por WhatsApp también recibimos 3MF, OBJ y STEP. Si solo tienes planos, fotos o un dibujo, lo modelamos por ti.</p></details>
+    <details><summary>¿Cómo calculan el costo?</summary><p>Por el material, los gramos de filamento según el volumen y el relleno, más un cargo base por pieza. El cotizador da un estimado y lo confirmamos al revisar tu archivo.</p></details>
+    <details><summary>¿Mis archivos son privados?</summary><p>Sí. El cotizador funciona en tu navegador y no sube tu archivo a ningún servidor. Los archivos que nos envías solo se usan para tu pedido.</p></details>
+    <h2 class="faq-grupo">Grabado y corte láser</h2>
+    <details><summary>¿Qué archivo necesito para grabar o cortar?</summary><p>Para cortes y logos, un vector: SVG, DXF, PDF o AI. Para grabar fotos, JPG o PNG en buena resolución. Si solo tienes una idea o un boceto, te ayudamos a prepararlo.</p></details>
+    <details><summary>¿Puedo llevar mi propio objeto?</summary><p>Sí: termos de acero, tablas de madera, carteras de piel y más. Pregúntanos antes para confirmar que el material sirve y que cabe en el área de trabajo de 40 × 41.5 cm.</p></details>
+    <details><summary>¿Cortan acrílico transparente o metal?</summary><p>No. El láser azul no corta metal ni vidrio, y el acrílico transparente sin color no absorbe bien la luz del láser. En acero inoxidable sí hacemos marcado de logos y textos.</p></details>
+    <h2 class="faq-grupo">Maquetas y envíos</h2>
+    <details><summary>¿Cuánto tarda una maqueta?</summary><p>Depende de la escala y el tamaño: una volumétrica pequeña puede estar en [X] días; una de presentación con base y acabados, en [X] días. Dinos tu fecha de entrega al cotizar.</p></details>
+    <details><summary>¿Envían fuera de [TU CIUDAD]?</summary><p>Sí, enviamos a todo México por paquetería. También puedes recoger en el taller.</p></details>
+    <div class="no-encontraste hud">
+      <h2>¿No encontraste lo que buscabas?</h2>
+      <p>Escríbenos y resolvemos tu duda lo antes posible.</p>
+      <a href="#contacto" class="btn btn-laser">Ir a contacto</a>
+    </div>
+  </div>
+</section>
+
+<!-- ================= LLAMADO FINAL ================= -->
+<section data-vista="inicio laser maquetas materiales">
+  <div class="contenedor">
+    <div class="cta hud">
+      <h2>¿Listo para fabricar tu idea?</h2>
+      <div class="botones">
+        <a href="#impresion" class="btn btn-laser">Cotizar impresión 3D</a>
+        <a href="#laser" class="btn btn-linea">Cotizar láser</a>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="contenedor">
+    <div class="pie-grid">
+      <div>
+        <p style="font-family:var(--f-display);font-size:22px;font-weight:700;color:var(--texto);letter-spacing:.5px">RM <span style="color:var(--laser)">3D DESIGN</span></p>
+        <p style="margin-top:10px">Impresión 3D, grabado láser y maquetas en [TU CIUDAD].</p>
+        <p class="mono" style="margin-top:10px;font-size:12px;letter-spacing:1px">LUN–VIE [HORARIO] · SÁB [HORARIO]</p>
+      </div>
+      <div><h4>Servicios</h4><a href="#impresion">Impresión 3D</a><a href="#laser">Grabado y corte láser</a><a href="#maquetas">Maquetas</a><a href="#materiales">Materiales</a></div>
+      <div><h4>Ayuda</h4><a href="#ayuda">Preguntas frecuentes</a><a href="#contacto">Contacto</a><a href="#" class="js-wa" data-msg="Hola RM 3D Design.">WhatsApp</a></div>
+      <div><h4>Síguenos</h4><a href="#">Instagram</a><a href="#">Facebook</a><a href="#">TikTok</a><a href="#">Mercado Libre</a></div>
+    </div>
+    <div class="legal"><span>© <span id="anio"></span> RM 3D Design</span><span>Términos · Privacidad</span></div>
+  </div>
+</footer>
+
+<a href="#" class="wa-flotante js-wa" data-msg="Hola RM 3D Design, vi su página y quiero cotizar." aria-label="Escribir por WhatsApp">
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12a9 9 0 0 1-13.5 7.8L3 21l1.2-4.5A9 9 0 1 1 21 12z"/></svg>
+</a>
+
+<script>
+/* =========================================================
+   1) TU NÚMERO DE WHATSAPP (52 + 10 dígitos, sin espacios)
+   ========================================================= */
+const WHATSAPP = "52XXXXXXXXXX";
+
+/* =========================================================
+   2) TUS PRECIOS — ESTOS SON VALORES DE EJEMPLO, AJÚSTALOS
+   precio: pesos por gramo de filamento
+   densidad: g/cm³ del material (no cambiar)
+   ========================================================= */
+const MATERIALES = {
+  PLA:  { precio: 1.5, densidad: 1.24 },
+  PETG: { precio: 1.8, densidad: 1.27 },
+  ASA:  { precio: 2.2, densidad: 1.07 },
+  TPU:  { precio: 2.5, densidad: 1.21 }
+};
+const CARGO_BASE = 50;          // pesos por pieza (preparación, retiro de soportes)
+const PRECIO_MINIMO = 80;       // precio mínimo por pieza
+// Qué fracción de la pieza queda llena de plástico según el relleno (paredes + relleno)
+const RELLENO = { ligero: 0.30, normal: 0.40, resistente: 0.60, solido: 1.0 };
+// Descuentos por cantidad
+const DESCUENTOS = [ { desde: 50, pct: 0.20 }, { desde: 10, pct: 0.10 } ];
+const VOLUMEN_MAX_MM = 256;     // área de impresión de la Bambu Lab P2S
+
+/* ---------- WhatsApp ---------- */
+const linkWA = (t) => "https://wa.me/" + WHATSAPP + "?text=" + encodeURIComponent(t);
+document.querySelectorAll(".js-wa").forEach((a) => {
+  a.href = linkWA(a.dataset.msg || "Hola RM 3D Design.");
+  a.target = "_blank"; a.rel = "noopener";
+});
+document.getElementById("anio").textContent = new Date().getFullYear();
+
+/* ---------- Pestañas (cada una funciona como página) ---------- */
+const TITULOS = { inicio: "Impresión 3D y láser", impresion: "Impresión 3D", laser: "Grabado y corte láser", maquetas: "Maquetas", materiales: "Materiales", contacto: "Contacto", ayuda: "Ayuda" };
+function irA(hash, conScroll) {
+  let id = (hash || "").replace("#", "") || "inicio";
+  let vista = TITULOS[id] ? id : null, destino = null;
+  if (!vista) {
+    destino = document.getElementById(id);
+    const cont = destino && destino.closest("[data-vista]");
+    vista = cont ? cont.dataset.vista.split(" ")[0] : "inicio";
+  }
+  document.querySelectorAll("[data-vista]").forEach((el) => el.classList.toggle("activa", el.dataset.vista.split(" ").includes(vista)));
+  document.querySelectorAll("[data-tab]").forEach((a) => { if (a.dataset.tab === vista) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
+  document.title = "RM 3D Design · " + TITULOS[vista];
+  if (destino && vista === "inicio" && id !== "inicio") destino.scrollIntoView({ behavior: conScroll ? "smooth" : "auto" });
+  else window.scrollTo({ top: 0 });
+}
+window.addEventListener("hashchange", () => irA(location.hash, true));
+irA(location.hash, false);
+
+/* ---------- Formulario de contacto ---------- */
+document.getElementById("form-contacto").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const d = new FormData(e.target);
+  const msg = "Hola RM 3D Design.\n• Nombre: " + d.get("nombre") + "\n• Asunto: " + d.get("asunto") +
+    (d.get("tel") ? "\n• Teléfono: " + d.get("tel") : "") + (d.get("correo") ? "\n• Correo: " + d.get("correo") : "") +
+    "\n\n" + d.get("mensaje");
+  abrirWA(msg, "c-enlace");
+});
+
+
+/* ---------- Visor 3D ---------- */
+function crearVisor(canvas) {
+  if (!window.THREE) return null;
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(35, 4 / 3, 0.1, 100);
+  let dist = 6;
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x3a3a42, 0.85));
+  const luz = new THREE.DirectionalLight(0xffffff, 0.75); luz.position.set(4, 6, 5); scene.add(luz);
+  const luz2 = new THREE.DirectionalLight(0xffffff, 0.25); luz2.position.set(-4, 2, -3); scene.add(luz2);
+  const grid = new THREE.GridHelper(4, 16, 0x8a3a32, 0x262c38); grid.position.y = -1.02; scene.add(grid);
+  const pivote = new THREE.Group(); scene.add(pivote);
+  let rotY = 0.7, rotX = 0.18, arrastrando = false, lx = 0, ly = 0, auto = true, tAuto;
+
+  canvas.addEventListener("pointerdown", (e) => { arrastrando = true; auto = false; lx = e.clientX; ly = e.clientY; canvas.setPointerCapture(e.pointerId); e.preventDefault(); });
+  canvas.addEventListener("pointermove", (e) => {
+    if (!arrastrando) return;
+    rotY += (e.clientX - lx) * 0.01; rotX += (e.clientY - ly) * 0.006;
+    rotX = Math.max(-0.6, Math.min(1.1, rotX)); lx = e.clientX; ly = e.clientY;
+  });
+  const soltar = () => { arrastrando = false; clearTimeout(tAuto); tAuto = setTimeout(() => (auto = true), 3000); };
+  canvas.addEventListener("pointerup", soltar); canvas.addEventListener("pointercancel", soltar);
+  canvas.addEventListener("wheel", (e) => { e.preventDefault(); dist = Math.max(3, Math.min(10, dist + e.deltaY * 0.004)); }, { passive: false });
+
+  function ajustar() {
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    if (!w || !h) return;
+    const pr = renderer.getPixelRatio();
+    if (canvas.width !== Math.round(w * pr) || canvas.height !== Math.round(h * pr)) {
+      renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+    }
+  }
+  function ciclo() {
+    ajustar();
+    if (auto && !arrastrando) rotY += 0.005;
+    pivote.rotation.set(rotX, rotY, 0);
+    pivote.traverse((o) => { if (o.userData.giro) o.rotation.z += o.userData.giro; });
+    camera.position.set(0, dist * 0.28, dist); camera.lookAt(0, -0.1, 0);
+    renderer.render(scene, camera);
+    requestAnimationFrame(ciclo);
+  }
+  ciclo();
+
+  return {
+    mostrar(obj) {
+      while (pivote.children.length) pivote.remove(pivote.children[0]);
+      if (obj.parent) obj.parent.remove(obj);
+      obj.position.set(0, 0, 0); obj.updateMatrixWorld(true);
+      const caja = new THREE.Box3().setFromObject(obj);
+      const tam = new THREE.Vector3(); caja.getSize(tam);
+      const centro = new THREE.Vector3(); caja.getCenter(centro);
+      const esc = 2 / Math.max(tam.x, tam.y, tam.z, 0.0001);
+      const envoltura = new THREE.Group();
+      obj.position.sub(centro);
+      envoltura.add(obj); envoltura.scale.setScalar(esc);
+      pivote.add(envoltura);
+    }
+  };
+}
+
+const mat = (color, extra) => new THREE.MeshStandardMaterial(Object.assign({ color, roughness: 0.65, metalness: 0.05 }, extra || {}));
+
+// Torre paramétrica (mismos parámetros que el archivo torre-parametrica.stl, en mm)
+function modeloTorre() {
+  const P = { pisos: 30, hPiso: 5.6, losa: 1.4, r: 22, conicidad: 0.30, abombado: 0.14, giro: 110, n: 4, retranqueo: 2, podioR: 32, podioH: 10, seg: 64 };
+  const g = new THREE.Group();
+  const M = {
+    podio: mat(0x9E9EA8), losa: mat(0xF5F5F2),
+    vidrio: mat(0x2A3D54, { metalness: 0.4, roughness: 0.25 }), acento: mat(0xD62828)
+  };
+  const contorno = (r, ang) => {
+    const sh = new THREE.Shape(), e = 2 / P.n, a = ang * Math.PI / 180;
+    for (let i = 0; i < P.seg; i++) {
+      const t = (i / P.seg) * Math.PI * 2, c = Math.cos(t), s = Math.sin(t);
+      const x = r * Math.sign(c) * Math.pow(Math.abs(c), e), y = r * Math.sign(s) * Math.pow(Math.abs(s), e);
+      const X = x * Math.cos(a) - y * Math.sin(a), Y = x * Math.sin(a) + y * Math.cos(a);
+      i ? sh.lineTo(X, Y) : sh.moveTo(X, Y);
+    }
+    return sh;
+  };
+  const prisma = (r, ang, z0, z1, m) => {
+    const geo = new THREE.ExtrudeGeometry(contorno(r, ang), { depth: z1 - z0, bevelEnabled: false, curveSegments: 1 });
+    const o = new THREE.Mesh(geo, m); o.rotation.x = -Math.PI / 2; o.position.y = z0; g.add(o);
+  };
+  prisma(P.podioR, 0, 0, P.podioH - 2, M.podio);
+  prisma(P.podioR - 3, 0, P.podioH - 2, P.podioH, M.vidrio);
+  let z = P.podioH;
+  for (let i = 0; i < P.pisos; i++) {
+    const t = i / (P.pisos - 1);
+    const r = P.r * (1 - P.conicidad * t) * (1 + P.abombado * Math.sin(Math.PI * t));
+    const ang = P.giro * t;
+    prisma(r, ang, z, z + P.losa, (i === P.pisos - 1 || i % 10 === 9) ? M.acento : M.losa);
+    prisma(r - P.retranqueo, ang, z + P.losa, z + P.hPiso, M.vidrio);
+    z += P.hPiso;
+  }
+  prisma(P.r * (1 - P.conicidad) * 0.55, P.giro, z, z + 4, M.acento);
+  prisma(1.2, 0, z + 4, z + 18, M.acento);
+  return g;
+}
+function modeloSoporte() {
+  const g = new THREE.Group(); const rojo = mat(0xD62828), oscuro = mat(0x1B1B1F);
+  const base = new THREE.Mesh(new THREE.BoxGeometry(2, 0.28, 1.1), rojo); g.add(base);
+  const pared = new THREE.Mesh(new THREE.BoxGeometry(0.28, 1.5, 1.1), rojo); pared.position.set(-0.86, 0.61, 0); g.add(pared);
+  const forma = new THREE.Shape(); forma.moveTo(0, 0); forma.lineTo(0.9, 0); forma.lineTo(0, 0.9); forma.lineTo(0, 0);
+  const cartela = new THREE.Mesh(new THREE.ExtrudeGeometry(forma, { depth: 0.18, bevelEnabled: false }), rojo);
+  cartela.position.set(-0.72, 0.14, -0.09); g.add(cartela);
+  [[0.35, 0.3], [0.35, -0.3], [0.75, 0.3], [0.75, -0.3]].forEach(([x, z]) => {
+    const h = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.3, 24), oscuro); h.position.set(x, 0.01, z); g.add(h);
+  });
+  [0.3, -0.3].forEach((z) => {
+    const h = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.3, 24), oscuro);
+    h.rotation.z = Math.PI / 2; h.position.set(-0.86, 1.0, z); g.add(h);
+  });
+  return g;
+}
+function modeloPabellon() {
+  // Pérgola sobre plataforma escalonada, con composición geométrica flotante
+  const g = new THREE.Group();
+  const caja = (w, h, d, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); g.add(o); return o; };
+  const pizarra = mat(0x3E5872, { roughness: 0.8 }), pizarraClara = mat(0x5B7590, { roughness: 0.8 });
+  const crema = mat(0xEDE8E0, { roughness: 0.9 }), oscuro = mat(0x23303D, { roughness: 0.5, metalness: 0.3 });
+  const madera = mat(0xB8875A, { roughness: 0.75 }), dorado = mat(0xD9B77E, { roughness: 0.4, metalness: 0.35 });
+  const marino = mat(0x1F3A57, { roughness: 0.45, metalness: 0.2 }), hoja = mat(0x6E8B3D, { roughness: 1, flatShading: true });
+
+  // Plataforma con escalones
+  caja(2.7, 0.1, 2.7, pizarra, 0, 0.05, 0);
+  caja(2.5, 0.1, 2.5, pizarraClara, 0, 0.15, 0);
+  caja(2.3, 0.06, 2.3, crema, 0, 0.23, 0);
+  for (let i = -1; i <= 1; i++) caja(0.5, 0.05, 0.12, pizarraClara, i * 0.6, 0.03, 1.4); // escalones al frente
+
+  // Columnas y vigas
+  const H = 1.35, yTop = 0.26 + H;
+  [[-0.98, -0.98], [0.98, -0.98], [-0.98, 0.98], [0.98, 0.98]].forEach(([x, z]) => caja(0.09, H, 0.09, oscuro, x, 0.26 + H / 2, z));
+  caja(2.06, 0.09, 0.09, oscuro, 0, yTop, -0.98); caja(2.06, 0.09, 0.09, oscuro, 0, yTop, 0.98);
+  caja(0.09, 0.09, 2.06, oscuro, -0.98, yTop, 0); caja(0.09, 0.09, 2.06, oscuro, 0.98, yTop, 0);
+  // Celosía de madera del techo
+  for (let i = 0; i < 20; i++) caja(0.05, 0.06, 2.24, madera, -0.95 + i * 0.1, yTop + 0.075, 0);
+
+  // Celosías verticales
+  for (let i = 0; i < 9; i++) caja(0.025, H - 0.1, 0.025, oscuro, -0.85 + i * 0.07, 0.26 + (H - 0.1) / 2, -0.98);
+  for (let i = 0; i < 7; i++) caja(0.025, H - 0.1, 0.025, oscuro, 0.98, 0.26 + (H - 0.1) / 2, 0.3 + i * 0.08);
+
+  // Bancas
+  [[-0.35, 0.25, 0], [0.45, -0.35, Math.PI / 2]].forEach(([x, z, r]) => {
+    const b = new THREE.Group();
+    const s = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.04, 0.18), madera); s.position.y = 0.42; b.add(s);
+    [-0.25, 0.25].forEach((lx) => { const l = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.16, 0.16), oscuro); l.position.set(lx, 0.34, 0); b.add(l); });
+    b.position.set(x, 0, z); b.rotation.y = r; g.add(b);
+  });
+
+  // Árboles
+  [[-0.6, -0.5, 1], [0.6, 0.55, 0.8]].forEach(([x, z, s]) => {
+    const t = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.03, 0.45 * s, 8), madera); t.position.set(x, 0.26 + 0.22 * s, z); g.add(t);
+    const c = new THREE.Mesh(new THREE.IcosahedronGeometry(0.22 * s, 1), hoja); c.position.set(x, 0.26 + 0.55 * s, z); g.add(c);
+  });
+
+  // Composición flotante: esferas, anillos y órbitas
+  const esfera = (r, m, x, y, z, alambre) => {
+    const e = new THREE.Mesh(new THREE.SphereGeometry(r, 32, 24), m); e.position.set(x, y, z); g.add(e);
+    if (alambre) { const w = new THREE.Mesh(new THREE.SphereGeometry(r * 1.02, 16, 12), new THREE.MeshBasicMaterial({ color: 0xD9B77E, wireframe: true, transparent: true, opacity: 0.5 })); w.position.copy(e.position); g.add(w); }
+    return e;
+  };
+  const anillo = (r, grosor, m, x, y, z, rx, ry, giro) => {
+    const a = new THREE.Mesh(new THREE.TorusGeometry(r, grosor, 12, 80), m); a.position.set(x, y, z); a.rotation.set(rx, ry, 0);
+    a.userData.giro = giro || 0; g.add(a); return a;
+  };
+  const orbita = (r, x, y, z, rx, ry) => {
+    const pts = new THREE.EllipseCurve(0, 0, r, r, 0, Math.PI * 2).getPoints(90).map((p) => new THREE.Vector3(p.x, p.y, 0));
+    const l = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0x8FA3B8, transparent: true, opacity: 0.6 }));
+    l.position.set(x, y, z); l.rotation.set(rx, ry, 0); g.add(l);
+  };
+  const varilla = (x, z, y0, y1) => caja(0.012, y1 - y0, 0.012, oscuro, x, (y0 + y1) / 2, z);
+
+  // Disco central con anillos concéntricos
+  esfera(0.42, marino, 0.15, 2.55, -0.2, true);
+  anillo(0.62, 0.025, dorado, 0.15, 2.55, -0.2, 0.2, 0.3, 0.004);
+  anillo(0.8, 0.012, oscuro, 0.15, 2.55, -0.2, 1.2, -0.4, -0.003);
+  anillo(1.0, 0.008, dorado, 0.15, 2.55, -0.2, 0.6, 0.9, 0.002);
+  orbita(1.25, 0.15, 2.55, -0.2, 1.45, 0.2);
+  orbita(0.95, 0.15, 2.55, -0.2, 0.3, 1.1);
+  // Esferas satélite
+  esfera(0.26, crema, -0.95, 2.75, 0.2, false);
+  esfera(0.2, dorado, 1.05, 3.0, -0.45, false);
+  esfera(0.16, pizarra, -0.55, 3.25, -0.6, true);
+  esfera(0.14, marino, 1.15, 2.15, 0.55, false);
+  esfera(0.11, crema, -1.15, 2.1, -0.75, false);
+  esfera(0.09, dorado, 0.65, 3.35, 0.35, false);
+  esfera(0.07, marino, -0.25, 3.45, 0.5, false);
+  esfera(0.06, dorado, 0.95, 2.45, 0.85, false);
+  anillo(0.2, 0.02, dorado, -0.95, 2.75, 0.2, 1.3, 0, 0.01);
+  anillo(0.14, 0.012, marino, 1.05, 3.0, -0.45, 0.4, 1.2, -0.012);
+  // Varillas que unen la composición con la pérgola
+  varilla(0.15, -0.2, yTop + 0.1, 2.13);
+  varilla(-0.95, 0.2, yTop + 0.1, 2.49);
+  varilla(1.15, 0.55, yTop + 0.1, 2.01);
+  varilla(-1.15, -0.75, yTop + 0.1, 1.99);
+  return g;
+}
+
+// Pabellón real (modelo 3D con texturas incrustado en esta página). Si no carga, se usa el pabellón dibujado.
+let pabellonReal = null;
+// Lector propio del GLB incrustado (no depende de librerías externas además de three.js)
+function cargarPabellonReal(listo) {
+  fetch("modelos/pabellon.glb").then((r) => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+    .then((ab) => leerGLB(new Uint8Array(ab), listo)).catch((e) => { console.error("No se pudo cargar el pabellón:", e); listo(null); });
+}
+function leerGLB(u8, listo) {
+  try {
+    const dv = new DataView(u8.buffer);
+    const jsonLen = dv.getUint32(12, true);
+    const g = JSON.parse(new TextDecoder().decode(u8.subarray(20, 20 + jsonLen)));
+    const binStart = 20 + jsonLen + 8;
+    const vista = (i) => { const v = g.bufferViews[i]; return { off: binStart + v.byteOffset, len: v.byteLength, stride: v.byteStride || 0 }; };
+    const acc = g.accessors, prim = g.meshes[0].primitives[0], nodo = g.nodes[0];
+    const n = acc[prim.attributes.POSITION].count;
+    const T = nodo.translation || [0, 0, 0], S = nodo.scale || [1, 1, 1];
+
+    const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), uv = new Float32Array(n * 2);
+    let v = vista(acc[prim.attributes.POSITION].bufferView);
+    for (let i = 0; i < n; i++) for (let k = 0; k < 3; k++)
+      pos[i * 3 + k] = T[k] + S[k] * dv.getUint16(v.off + i * v.stride + k * 2, true) / 65535;
+    v = vista(acc[prim.attributes.NORMAL].bufferView);
+    // las normales ya están en el espacio del modelo
+    for (let i = 0; i < n; i++) {
+      nor[i * 3] = dv.getInt8(v.off + i * v.stride) / 127;
+      nor[i * 3 + 1] = dv.getInt8(v.off + i * v.stride + 1) / 127;
+      nor[i * 3 + 2] = dv.getInt8(v.off + i * v.stride + 2) / 127;
+    }
+    v = vista(acc[prim.attributes.TEXCOORD_0].bufferView);
+    for (let i = 0; i < n * 2; i++) uv[i] = dv.getUint16(v.off + i * 2, true) / 65535;
+    v = vista(acc[prim.indices].bufferView);
+    const idx = new Uint32Array(u8.buffer.slice(v.off, v.off + v.len));
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute("normal", new THREE.BufferAttribute(nor, 3));
+    geo.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
+    geo.setIndex(new THREE.BufferAttribute(idx, 1));
+
+    const textura = (img) => new Promise((ok) => {
+      const vv = vista(g.images[img].bufferView);
+      const url = URL.createObjectURL(new Blob([u8.subarray(vv.off, vv.off + vv.len)], { type: "image/jpeg" }));
+      new THREE.TextureLoader().load(url, (t) => { t.flipY = false; t.anisotropy = 4; ok(t); }, undefined, () => ok(null));
+    });
+    const m = g.materials[0], tx = g.textures;
+    Promise.all([
+      textura(tx[m.pbrMetallicRoughness.baseColorTexture.index].source),
+      textura(tx[m.normalTexture.index].source),
+      textura(tx[m.pbrMetallicRoughness.metallicRoughnessTexture.index].source)
+    ]).then(([color, relieve, mr]) => {
+      const material = new THREE.MeshStandardMaterial({
+        map: color, normalMap: relieve, roughnessMap: mr, metalnessMap: mr,
+        roughness: 1, metalness: 0.3, side: THREE.DoubleSide
+      });
+      const malla = new THREE.Mesh(geo, material);
+      const grupo = new THREE.Group(); grupo.add(malla);
+      listo(grupo);
+    });
+  } catch (e) { console.error("No se pudo cargar el pabellón:", e); listo(null); }
+}
+
+const MODELOS = { torre: modeloTorre, soporte: modeloSoporte, pabellon: () => pabellonReal || modeloPabellon() };
+const visorEj = crearVisor(document.getElementById("visor-ejemplos"));
+if (visorEj) {
+  visorEj.mostrar(modeloPabellon());
+  const notaVisor = document.querySelector(".visor-nota");
+  const textoNota = notaVisor.textContent;
+  notaVisor.textContent = "Cargando el modelo del pabellón…";
+  cargarPabellonReal((escena) => {
+    pabellonReal = escena;
+    notaVisor.textContent = escena ? textoNota : "No se pudo cargar el modelo del pabellón; se muestra una versión simplificada.";
+    const activo = document.querySelector('.tab[aria-pressed="true"]');
+    if (escena && activo && activo.dataset.modelo === "pabellon") visorEj.mostrar(escena);
+  });
+  document.querySelectorAll(".tab").forEach((b) => b.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach((x) => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+    visorEj.mostrar(MODELOS[b.dataset.modelo]());
+    document.getElementById("hud-modelo").textContent = "MOD · " + b.textContent.split(" ")[0].toUpperCase();
+  }));
+} else {
+  document.querySelector(".visor-nota").textContent = "El visor 3D necesita conexión a internet.";
+}
+
+/* ---------- Cotizador de STL ---------- */
+const zona = document.getElementById("soltar");
+const inputArchivo = document.getElementById("archivo");
+const visorSTL = crearVisor(document.getElementById("visor-stl"));
+let pieza = null; // { nombre, volumenCm3, medidas:[x,y,z] mm }
+
+function leerSTL(buffer) {
+  const dv = new DataView(buffer);
+  let pos;
+  const binario = buffer.byteLength >= 84 && 84 + dv.getUint32(80, true) * 50 === buffer.byteLength;
+  if (binario) {
+    const n = dv.getUint32(80, true); pos = new Float32Array(n * 9);
+    for (let i = 0; i < n; i++) {
+      const o = 84 + i * 50 + 12;
+      for (let j = 0; j < 9; j++) pos[i * 9 + j] = dv.getFloat32(o + j * 4, true);
+    }
+  } else {
+    const texto = new TextDecoder().decode(buffer);
+    const re = /vertex\s+([-+\d.eE]+)\s+([-+\d.eE]+)\s+([-+\d.eE]+)/g; const v = []; let m;
+    while ((m = re.exec(texto))) v.push(+m[1], +m[2], +m[3]);
+    pos = new Float32Array(v);
+  }
+  if (pos.length < 9) throw new Error("vacío");
+  let vol = 0, min = [Infinity, Infinity, Infinity], max = [-Infinity, -Infinity, -Infinity];
+  for (let i = 0; i < pos.length; i += 9) {
+    const ax = pos[i], ay = pos[i+1], az = pos[i+2], bx = pos[i+3], by = pos[i+4], bz = pos[i+5], cx = pos[i+6], cy = pos[i+7], cz = pos[i+8];
+    vol += (ax * (by * cz - bz * cy) - ay * (bx * cz - bz * cx) + az * (bx * cy - by * cx)) / 6;
+  }
+  for (let i = 0; i < pos.length; i += 3) for (let k = 0; k < 3; k++) { min[k] = Math.min(min[k], pos[i+k]); max[k] = Math.max(max[k], pos[i+k]); }
+  return { pos, volumenCm3: Math.abs(vol) / 1000, medidas: [max[0]-min[0], max[1]-min[1], max[2]-min[2]] };
+}
+
+function mostrarEnVisor(pos) {
+  if (!visorSTL) return;
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  geo.computeVertexNormals();
+  const malla = new THREE.Mesh(geo, mat(0xD62828, { flatShading: false }));
+  malla.rotation.x = -Math.PI / 2; // STL usa Z hacia arriba
+  const g = new THREE.Group(); g.add(malla); g.updateMatrixWorld(true);
+  visorSTL.mostrar(g);
+}
+
+function cargarBuffer(nombre, buffer) {
+  try {
+    const r = leerSTL(buffer);
+    pieza = { nombre, volumenCm3: r.volumenCm3, medidas: r.medidas };
+    zona.classList.add("cargado");
+    document.getElementById("nombre-archivo").textContent = nombre;
+    mostrarEnVisor(r.pos);
+    calcular();
+  } catch (err) {
+    alert("No pudimos leer ese archivo. Verifica que sea un STL válido o mándalo por WhatsApp.");
+  }
+}
+
+function cargarArchivo(f) {
+  if (!f) return;
+  if (!/\.stl$/i.test(f.name)) { alert("El cotizador lee archivos STL. Para 3MF, OBJ o STEP, mándalo por WhatsApp."); return; }
+  if (f.size > 100 * 1024 * 1024) { alert("El archivo pesa más de 100 MB. Mándalo por WhatsApp."); return; }
+  f.arrayBuffer().then((b) => cargarBuffer(f.name, b));
+}
+
+inputArchivo.addEventListener("change", () => cargarArchivo(inputArchivo.files[0]));
+["dragenter", "dragover"].forEach((ev) => zona.addEventListener(ev, (e) => { e.preventDefault(); zona.classList.add("encima"); }));
+["dragleave", "drop"].forEach((ev) => zona.addEventListener(ev, (e) => { e.preventDefault(); zona.classList.remove("encima"); }));
+zona.addEventListener("drop", (e) => cargarArchivo(e.dataTransfer.files[0]));
+// Evita que hacer clic sobre la vista 3D vuelva a abrir el selector de archivo
+document.getElementById("visor-stl").addEventListener("click", (e) => e.preventDefault());
+
+// Ejemplo: cubo con hueco de 40 mm generado como STL binario
+document.getElementById("probar-ejemplo").addEventListener("click", () => {
+  const cajas = [[0,0,0,40,40,6],[0,0,6,6,40,40],[34,0,6,40,40,40],[6,0,34,34,40,40],[6,0,6,34,6,34]];
+  const tris = [];
+  cajas.forEach(([x0,y0,z0,x1,y1,z1]) => {
+    const v = [[x0,y0,z0],[x1,y0,z0],[x1,y1,z0],[x0,y1,z0],[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]];
+    [[0,2,1],[0,3,2],[4,5,6],[4,6,7],[0,1,5],[0,5,4],[1,2,6],[1,6,5],[2,3,7],[2,7,6],[3,0,4],[3,4,7]].forEach((t) => tris.push(t.map((i) => v[i])));
+  });
+  const buf = new ArrayBuffer(84 + tris.length * 50); const dv = new DataView(buf);
+  dv.setUint32(80, tris.length, true);
+  tris.forEach((t, i) => { t.forEach((p, j) => p.forEach((c, k) => dv.setFloat32(84 + i * 50 + 12 + (j * 3 + k) * 4, c, true))); });
+  cargarBuffer("ejemplo-pieza.stl", buf);
+});
+
+const $ = (id) => document.getElementById(id);
+const pesos = (n) => "$" + Math.round(n).toLocaleString("es-MX");
+
+function calcular() {
+  const btn = $("enviar-cotizacion");
+  if (!pieza) { btn.disabled = true; return; }
+  const m = MATERIALES[$("material").value];
+  const factor = RELLENO[$("relleno").value];
+  const cant = Math.max(1, parseInt($("cantidad").value, 10) || 1);
+  const gramos = pieza.volumenCm3 * m.densidad * factor;
+  let unitario = Math.max(PRECIO_MINIMO, CARGO_BASE + gramos * m.precio);
+  const d = DESCUENTOS.find((x) => cant >= x.desde);
+  const unitarioFinal = unitario * (1 - (d ? d.pct : 0));
+  const [x, y, z] = pieza.medidas;
+  $("r-medidas").textContent = x.toFixed(0) + " × " + y.toFixed(0) + " × " + z.toFixed(0) + " mm";
+  $("r-volumen").textContent = pieza.volumenCm3.toFixed(1) + " cm³";
+  $("r-peso").textContent = gramos.toFixed(0) + " g";
+  $("r-unitario").textContent = pesos(unitarioFinal) + (d ? " (−" + d.pct * 100 + "%)" : "");
+  $("r-total").textContent = pesos(unitarioFinal * cant);
+  $("alerta-tamano").style.display = Math.max(x, y, z) > VOLUMEN_MAX_MM ? "block" : "none";
+  btn.disabled = false;
+  btn.dataset.msg =
+    "Hola RM 3D Design, quiero cotizar esta pieza:\n" +
+    "• Archivo: " + pieza.nombre + "\n" +
+    "• Medidas: " + $("r-medidas").textContent + "\n" +
+    "• Material: " + $("material").value + " · Relleno: " + $("relleno").selectedOptions[0].text + "\n" +
+    "• Color: " + $("color").value + "\n" +
+    "• Cantidad: " + cant + "\n" +
+    "• Total estimado: " + $("r-total").textContent + "\n" +
+    "Les envío el archivo por aquí.";
+  $("enlace-cotizacion").href = linkWA(btn.dataset.msg);
+}
+["material", "relleno", "color", "cantidad"].forEach((id) => $(id).addEventListener("input", calcular));
+$("enviar-cotizacion").addEventListener("click", (e) => abrirWA(e.currentTarget.dataset.msg, "enlace-cotizacion"));
+
+/* =========================================================
+   3) PRECIOS DEL LÁSER — VALORES DE EJEMPLO, AJÚSTALOS
+   ========================================================= */
+const LASER = {
+  CARGO_BASE: 30,        // pesos por pieza (preparar archivo, acomodar material)
+  MINIMO: 60,            // precio mínimo por pieza
+  GRABADO_CM2: 0.9,      // pesos por cm² grabado
+  CORTE_CM: 0.6,         // pesos por cm de contorno cortado (material de 3 mm)
+  MATERIAL_CM2: { mdf: 0.05, triplay: 0.08, acrilico: 0.18, piel: 0, acero: 0, anodizado: 0, propio: 0 },
+  SIN_CORTE: ["acero", "anodizado"],
+  AREA_MAX: [40, 41.5]   // cm, área de trabajo de la Falcon2
+};
+
+/* ---------- Abrir WhatsApp (con enlace de respaldo visible) ---------- */
+function abrirWA(msg, idEnlace) {
+  const url = linkWA(msg);
+  const a = idEnlace && document.getElementById(idEnlace);
+  if (a) { a.href = url; a.classList.add("listo"); }
+  try { window.open(url, "_blank"); } catch (e) { /* el enlace de respaldo queda visible */ }
+}
+
+/* ---------- Cotizador láser ---------- */
+function calcularLaser() {
+  const mat = $("l-material").value, trabajo = $("l-trabajo").value;
+  let w = parseFloat($("l-ancho").value) || 0, h = parseFloat($("l-alto").value) || 0;
+  const cobertura = parseFloat($("l-cobertura").value);
+  const cant = Math.max(1, parseInt($("l-cantidad").value, 10) || 1);
+  const avisos = [];
+  const [mx, my] = LASER.AREA_MAX;
+  const cabe = (w <= mx && h <= my) || (w <= my && h <= mx);
+  if (!cabe) avisos.push("La pieza es más grande que el área de trabajo (40 × 41.5 cm): la haremos por partes y te confirmamos el precio.");
+  let graba = trabajo !== "corte", corta = trabajo !== "grabado";
+  if (corta && LASER.SIN_CORTE.includes(mat)) { corta = false; avisos.push("Este material solo se graba o se marca; no se corta con láser."); }
+  const area = w * h;
+  const aGrabada = graba ? area * cobertura : 0;
+  const contorno = corta ? 2 * (w + h) * 1.3 : 0;   // silueta ≈ 30% más larga que un rectángulo
+  let unitario = LASER.CARGO_BASE + aGrabada * LASER.GRABADO_CM2 + contorno * LASER.CORTE_CM + area * (LASER.MATERIAL_CM2[mat] || 0);
+  unitario = Math.max(LASER.MINIMO, unitario);
+  const d = DESCUENTOS.find((x) => cant >= x.desde);
+  const final = unitario * (1 - (d ? d.pct : 0));
+  $("l-medidas").textContent = w.toFixed(1) + " × " + h.toFixed(1) + " cm";
+  $("l-area").textContent = graba ? aGrabada.toFixed(0) + " cm²" : "—";
+  $("l-corte").textContent = corta ? contorno.toFixed(0) + " cm" : "—";
+  $("l-unitario").textContent = pesos(final) + (d ? " (−" + d.pct * 100 + "%)" : "");
+  $("l-total").textContent = pesos(final * cant);
+  const al = $("l-alerta"); al.textContent = avisos.join(" "); al.style.display = avisos.length ? "block" : "none";
+  $("l-enviar").dataset.msg =
+    "Hola RM 3D Design, quiero cotizar un trabajo láser:\n" +
+    "• Material: " + $("l-material").selectedOptions[0].text + "\n" +
+    "• Trabajo: " + $("l-trabajo").selectedOptions[0].text + "\n" +
+    "• Medidas: " + $("l-medidas").textContent + "\n" +
+    "• Área grabada: " + $("l-cobertura").selectedOptions[0].text + "\n" +
+    "• Cantidad: " + cant + "\n" +
+    "• Total estimado: " + $("l-total").textContent + "\n" +
+    "Les envío mi diseño por aquí.";
+}
+["l-material", "l-trabajo", "l-ancho", "l-alto", "l-cobertura", "l-cantidad"].forEach((id) => $(id).addEventListener("input", calcularLaser));
+$("l-enviar").addEventListener("click", (e) => abrirWA(e.currentTarget.dataset.msg, "l-enlace"));
+calcularLaser();
+
+/* ---------- Simulación de grabado láser ---------- */
+(function () {
+  const cv = document.getElementById("lienzo-laser");
+  if (!cv) return;
+  const ctx = cv.getContext("2d");
+  const quieto = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let W = 0, H = 0, dpr = 1, mascara = null, fila = 0, fase = "grabar", pausa = 0, tCorte = 0;
+  const madera = document.createElement("canvas"), quemado = document.createElement("canvas");
+
+  function preparar() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = Math.round(cv.clientWidth * dpr); H = Math.round(cv.clientHeight * dpr);
+    if (!W || !H) return false;
+    cv.width = W; cv.height = H;
+    // tabla de madera
+    madera.width = W; madera.height = H;
+    const m = madera.getContext("2d");
+    const g = m.createLinearGradient(0, 0, W, H); g.addColorStop(0, "#C89A62"); g.addColorStop(1, "#B5834D");
+    m.fillStyle = g; m.fillRect(0, 0, W, H);
+    for (let i = 0; i < 70; i++) {
+      m.strokeStyle = "rgba(110,70,30," + (0.05 + Math.random() * 0.08) + ")"; m.lineWidth = (1 + Math.random() * 2) * dpr;
+      const y = Math.random() * H; m.beginPath(); m.moveTo(0, y);
+      for (let x = 0; x <= W; x += 40 * dpr) m.lineTo(x, y + Math.sin(x / (90 * dpr) + i) * 6 * dpr);
+      m.stroke();
+    }
+    // máscara del diseño a grabar
+    quemado.width = W; quemado.height = H;
+    const q = quemado.getContext("2d");
+    q.fillStyle = "#000"; q.textAlign = "center"; q.textBaseline = "middle";
+    q.font = "700 " + Math.round(H * 0.34) + "px 'Chakra Petch', sans-serif"; q.fillText("RM", W / 2, H * 0.42);
+    q.font = "500 " + Math.round(H * 0.075) + "px 'IBM Plex Mono', monospace"; q.fillText("3 D   D E S I G N", W / 2, H * 0.68);
+    q.lineWidth = 2 * dpr; q.strokeStyle = "#000"; q.strokeRect(W * 0.16, H * 0.79, W * 0.68, 0);
+    mascara = q.getImageData(0, 0, W, H);
+    fila = 0; fase = "grabar"; tCorte = 0; pausa = 0;
+    return true;
+  }
+  const marco = () => [W * 0.08, H * 0.1, W * 0.84, H * 0.8];
+  function dibujar(hasta, corte) {
+    ctx.drawImage(madera, 0, 0);
+    // zona grabada hasta la fila actual
+    ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, hasta); ctx.clip();
+    ctx.globalAlpha = 0.85; ctx.drawImage(quemado, 0, 0); ctx.restore();
+    // corte del contorno
+    if (corte > 0) {
+      const [x, y, w, h] = marco(), per = 2 * (w + h), L = per * corte;
+      ctx.strokeStyle = "#2A1A0C"; ctx.lineWidth = 2.5 * dpr; ctx.setLineDash([L, per]); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.stroke(); ctx.setLineDash([]);
+    }
+  }
+  function cabezal(x, y) {
+    ctx.fillStyle = "rgba(10,13,18,.9)"; ctx.fillRect(x - 14 * dpr, y - 30 * dpr, 28 * dpr, 20 * dpr);
+    const r = ctx.createRadialGradient(x, y, 0, x, y, 14 * dpr); r.addColorStop(0, "rgba(255,255,255,1)"); r.addColorStop(0.25, "rgba(255,68,56,.95)"); r.addColorStop(1, "rgba(255,68,56,0)");
+    ctx.fillStyle = r; ctx.beginPath(); ctx.arc(x, y, 14 * dpr, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "rgba(90,140,255,.9)"; ctx.lineWidth = 1.5 * dpr; ctx.beginPath(); ctx.moveTo(x, y - 10 * dpr); ctx.lineTo(x, y); ctx.stroke();
+  }
+  function paso() {
+    if (!mascara && !preparar()) { requestAnimationFrame(paso); return; }
+    if (cv.offsetParent !== null) {
+      if (fase === "grabar") {
+        fila = Math.min(H, fila + H / 170);
+        dibujar(fila, 0);
+        // posición del cabezal: barrido horizontal sobre la fila actual
+        const x = (Math.sin(performance.now() / 70) * 0.5 + 0.5) * W * 0.84 + W * 0.08;
+        cabezal(x, fila);
+        if (fila >= H) fase = "cortar";
+      } else if (fase === "cortar") {
+        tCorte = Math.min(1, tCorte + 0.008);
+        dibujar(H, tCorte);
+        const [x, y, w, h] = marco(), per = 2 * (w + h); let d = per * tCorte, px, py;
+        if (d < w) { px = x + d; py = y; } else if ((d -= w) < h) { px = x + w; py = y + d; } else if ((d -= h) < w) { px = x + w - d; py = y + h; } else { d -= w; px = x; py = y + h - d; }
+        cabezal(px, py);
+        if (tCorte >= 1) { fase = "pausa"; pausa = 0; }
+      } else {
+        dibujar(H, 1);
+        if (++pausa > 150) { fila = 0; tCorte = 0; fase = "grabar"; }
+      }
+    }
+    requestAnimationFrame(paso);
+  }
+  function arrancar() {
+    if (quieto) { if (preparar() || true) { const t = setInterval(() => { if (preparar()) { dibujar(H, 1); clearInterval(t); } }, 300); } return; }
+    requestAnimationFrame(paso);
+  }
+  (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(arrancar);
+  window.addEventListener("resize", () => { mascara = null; });
+  window.addEventListener("hashchange", () => { mascara = null; });
+})();
+
+/* ---------- Simulación de grabado rotativo (termo girando) ---------- */
+(function () {
+  const cv = document.getElementById("lienzo-rotativo");
+  if (!cv) return;
+  const ctx = cv.getContext("2d");
+  const quieto = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const TEXTO = "  MARÍA  ·  XV AÑOS  ·  2026  ·  ";
+  let W = 0, H = 0, dpr = 1, listo = false, giro = 0, avance = 0, pausa = 0;
+  const tira = document.createElement("canvas");     // diseño completo, desenrollado
+  const grabado = document.createElement("canvas");  // lo que ya se grabó
+  let Tw = 0, Th = 0, r = 0, cx = 0, y0 = 0, y1 = 0, banda0 = 0;
+
+  function preparar() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = Math.round(cv.clientWidth * dpr); H = Math.round(cv.clientHeight * dpr);
+    if (!W || !H) return false;
+    cv.width = W; cv.height = H;
+    r = Math.min(W * 0.2, H * 0.27); cx = W / 2; y0 = H * 0.13; y1 = H * 0.86;
+    Th = Math.round(r * 0.5); banda0 = (y0 + y1) / 2 - Th / 2;
+    Tw = Math.round(2 * Math.PI * r);
+    tira.width = Tw; tira.height = Th; grabado.width = Tw; grabado.height = Th;
+    const t = tira.getContext("2d");
+    t.fillStyle = "#E9EDF2"; t.textBaseline = "middle"; t.textAlign = "center";
+    t.font = "700 " + Math.round(Th * 0.62) + "px 'Chakra Petch', sans-serif";
+    t.fillText(TEXTO.trim(), Tw / 2, Th / 2);
+    t.fillRect(Tw * 0.08, Th * 0.9, Tw * 0.84, Math.max(1, Th * 0.04));
+    avance = 0; giro = 0; pausa = 0; listo = true;
+    return true;
+  }
+  function dibujar() {
+    // fondo y rodillos
+    const fondo = ctx.createLinearGradient(0, 0, 0, H); fondo.addColorStop(0, "#151A23"); fondo.addColorStop(1, "#0C0F14");
+    ctx.fillStyle = fondo; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = "#232A36"; ctx.fillRect(cx - r * 1.5, y1 + 6 * dpr, r * 3, 10 * dpr);
+    // cuerpo del termo: pintura negra con brillo
+    for (let x = Math.floor(cx - r); x < cx + r; x++) {
+      const s = (x - cx) / r, z = Math.sqrt(Math.max(0, 1 - s * s));
+      const luz = 0.25 + 0.75 * Math.pow(Math.max(0, z * 0.8 - s * 0.45), 3);
+      const v = Math.round(18 + 70 * luz);
+      ctx.fillStyle = "rgb(" + v + "," + (v + 2) + "," + (v + 6) + ")"; ctx.fillRect(x, y0, 1, y1 - y0);
+      // diseño grabado, envuelto alrededor del cilindro
+      const th = Math.asin(s);
+      let u = ((th + giro) / (2 * Math.PI)) * Tw; u = ((u % Tw) + Tw) % Tw;
+      ctx.globalAlpha = 0.35 + 0.65 * z;
+      ctx.drawImage(grabado, Math.floor(u), 0, 1, Th, x, banda0, 1, Th);
+      ctx.globalAlpha = 1;
+    }
+    // tapa y base metálicas
+    const met = ctx.createLinearGradient(cx - r, 0, cx + r, 0);
+    met.addColorStop(0, "#5D6675"); met.addColorStop(0.35, "#D9DEE6"); met.addColorStop(0.6, "#8C95A4"); met.addColorStop(1, "#3E4552");
+    ctx.fillStyle = met; ctx.fillRect(cx - r * 0.96, y0 - r * 0.28, r * 1.92, r * 0.28); ctx.fillRect(cx - r, y1 - 2 * dpr, r * 2, 6 * dpr);
+  }
+  function laser() {
+    // el láser graba al frente del termo (centro), barriendo la altura del diseño
+    const y = banda0 + (Math.sin(performance.now() / 45) * 0.5 + 0.5) * Th;
+    ctx.strokeStyle = "rgba(90,140,255,.9)"; ctx.lineWidth = 1.5 * dpr;
+    ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, y); ctx.stroke();
+    ctx.fillStyle = "rgba(10,13,18,.95)"; ctx.fillRect(cx - 16 * dpr, 0, 32 * dpr, 22 * dpr);
+    const g = ctx.createRadialGradient(cx, y, 0, cx, y, 16 * dpr); g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(0.25, "rgba(255,68,56,.95)"); g.addColorStop(1, "rgba(255,68,56,0)");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, y, 16 * dpr, 0, Math.PI * 2); ctx.fill();
+  }
+  function revelar(hasta) {
+    const g = grabado.getContext("2d");
+    g.clearRect(0, 0, Tw, Th);
+    // la columna que pasa frente al láser es u = giro/(2π)·Tw; todo lo anterior ya está grabado
+    g.drawImage(tira, 0, 0, hasta, Th, 0, 0, hasta, Th);
+  }
+  function paso() {
+    if (!listo && !preparar()) { requestAnimationFrame(paso); return; }
+    if (cv.offsetParent !== null) {
+      if (avance < Tw) {
+        giro += 0.006; avance = Math.min(Tw, (giro / (2 * Math.PI)) * Tw);
+        revelar(avance); dibujar(); laser();
+      } else {
+        giro += 0.012; revelar(Tw); dibujar();
+        if (++pausa > 260) { giro = 0; avance = 0; pausa = 0; }
+      }
+    }
+    requestAnimationFrame(paso);
+  }
+  (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(() => {
+    if (quieto) { const t = setInterval(() => { if (preparar()) { revelar(Tw); giro = 0.6; dibujar(); clearInterval(t); } }, 300); return; }
+    requestAnimationFrame(paso);
+  });
+  window.addEventListener("resize", () => { listo = false; });
+  window.addEventListener("hashchange", () => { listo = false; });
+})();
+
+/* ---------- Pestañas de la simulación láser ---------- */
+(function () {
+  const DESC = {
+    madera: ["Grabado en madera", "Grabado y corte sobre madera, MDF, bambú o acrílico: textos, logos y fotos."],
+    foto: ["Grabado de foto", "Convertimos tu foto en miles de puntos que el láser quema sobre la madera. Prueba con una foto tuya."],
+    rotativo: ["Grabado 360°", "Con el accesorio rotativo la pieza gira y el diseño rodea todo el objeto: termos, vasos, botellas y plumas."]
+  };
+  document.querySelectorAll(".ltab").forEach((b) => b.addEventListener("click", () => {
+    const k = b.dataset.panel;
+    document.querySelectorAll(".ltab").forEach((x) => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+    document.querySelectorAll(".laser-arte canvas[data-panel]").forEach((c) => { c.hidden = c.dataset.panel !== k; });
+    document.getElementById("l-hud").textContent = DESC[k][0];
+    document.getElementById("l-desc").textContent = DESC[k][1];
+    document.getElementById("l-subir").hidden = k !== "foto";
+    window.dispatchEvent(new Event("resize"));
+  }));
+})();
+
+/* ---------- Simulación de grabado de foto (perrito o la foto del visitante) ---------- */
+(function () {
+  const cv = document.getElementById("lienzo-foto");
+  if (!cv) return;
+  const ctx = cv.getContext("2d");
+  const quieto = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let W = 0, H = 0, dpr = 1, listo = false, fila = 0, pausa = 0, fuente = null;
+  const madera = document.createElement("canvas"), puntos = document.createElement("canvas");
+  let px = 0, py = 0, pw = 0, ph = 0;
+
+  // Perrito dibujado con formas (para no usar fotos ajenas)
+  function perrito(c, S) {
+    const g = c.getContext("2d");
+    const f = g.createLinearGradient(0, 0, 0, S); f.addColorStop(0, "#EEE6DA"); f.addColorStop(1, "#C9BBA6");
+    g.fillStyle = f; g.fillRect(0, 0, S, S);
+    const e = (x, y, rx, ry, rot, col) => { g.fillStyle = col; g.beginPath(); g.ellipse(x * S, y * S, rx * S, ry * S, rot, 0, Math.PI * 2); g.fill(); };
+    const rad = (x, y, r0, r1, a, b) => { const q = g.createRadialGradient(x * S, y * S, r0 * S, x * S, y * S, r1 * S); q.addColorStop(0, a); q.addColorStop(1, b); return q; };
+    e(0.5, 1.02, 0.42, 0.3, 0, rad(0.5, 0.9, 0.05, 0.45, "#B07A45", "#5A3518"));             // pecho
+    e(0.25, 0.42, 0.11, 0.24, 0.35, "#3E2410"); e(0.75, 0.42, 0.11, 0.24, -0.35, "#3E2410");  // orejas
+    e(0.5, 0.46, 0.27, 0.29, 0, rad(0.45, 0.36, 0.03, 0.32, "#C98B52", "#6B4020"));           // cabeza
+    e(0.5, 0.62, 0.16, 0.12, 0, rad(0.5, 0.58, 0.01, 0.17, "#F3E3CC", "#C9A57E"));            // hocico
+    e(0.5, 0.36, 0.045, 0.12, 0, "rgba(243,227,204,.75)");                                      // mancha frente
+    [0.39, 0.61].forEach((x) => { e(x, 0.45, 0.045, 0.05, 0, "#1A0E06"); e(x + 0.012, 0.437, 0.013, 0.013, 0, "#FFFFFF"); }); // ojos
+    e(0.5, 0.565, 0.055, 0.038, 0, "#140A04"); e(0.488, 0.553, 0.014, 0.008, 0, "rgba(255,255,255,.7)");                      // nariz
+    g.strokeStyle = "#3A2210"; g.lineWidth = S * 0.012; g.lineCap = "round";
+    g.beginPath(); g.moveTo(0.5 * S, 0.6 * S); g.lineTo(0.5 * S, 0.65 * S); g.quadraticCurveTo(0.45 * S, 0.69 * S, 0.42 * S, 0.66 * S);
+    g.moveTo(0.5 * S, 0.65 * S); g.quadraticCurveTo(0.55 * S, 0.69 * S, 0.58 * S, 0.66 * S); g.stroke();
+    e(0.5, 0.71, 0.045, 0.06, 0, "#E07A86");                                                   // lengua
+    g.fillStyle = "#8E1F24"; g.fillRect(0.3 * S, 0.84 * S, 0.4 * S, 0.05 * S);                 // collar
+    e(0.5, 0.9, 0.035, 0.035, 0, "#D9B56A");                                                   // placa
+  }
+
+  function preparar() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = Math.round(cv.clientWidth * dpr); H = Math.round(cv.clientHeight * dpr);
+    if (!W || !H) return false;
+    cv.width = W; cv.height = H;
+    madera.width = W; madera.height = H;
+    const m = madera.getContext("2d");
+    const g = m.createLinearGradient(0, 0, W, H); g.addColorStop(0, "#D4A86E"); g.addColorStop(1, "#BE8F57");
+    m.fillStyle = g; m.fillRect(0, 0, W, H);
+    for (let i = 0; i < 60; i++) {
+      m.strokeStyle = "rgba(110,70,30," + (0.04 + Math.random() * 0.07) + ")"; m.lineWidth = (1 + Math.random() * 2) * dpr;
+      const y = Math.random() * H; m.beginPath(); m.moveTo(0, y);
+      for (let x = 0; x <= W; x += 40 * dpr) m.lineTo(x, y + Math.sin(x / (90 * dpr) + i) * 6 * dpr);
+      m.stroke();
+    }
+    // zona de la foto
+    ph = Math.round(H * 0.82); pw = Math.round(ph * 0.85); px = Math.round((W - pw) / 2); py = Math.round((H - ph) / 2);
+    // imagen fuente a baja resolución (cada punto = un "pixel" del láser)
+    const paso = Math.max(2, Math.round(2.2 * dpr));
+    const cw = Math.floor(pw / paso), ch = Math.floor(ph / paso);
+    const src = document.createElement("canvas"); src.width = cw; src.height = ch;
+    const sg = src.getContext("2d");
+    let img = fuente;
+    if (!img) { img = document.createElement("canvas"); img.width = img.height = 600; perrito(img, 600); }
+    const k = Math.max(cw / img.width, ch / img.height);
+    sg.drawImage(img, (cw - img.width * k) / 2, (ch - img.height * k) / 2, img.width * k, img.height * k);
+    // escala de grises + contraste + tramado Floyd–Steinberg
+    const d = sg.getImageData(0, 0, cw, ch).data, L = new Float32Array(cw * ch);
+    for (let i = 0; i < cw * ch; i++) { let v = (0.3 * d[i * 4] + 0.59 * d[i * 4 + 1] + 0.11 * d[i * 4 + 2]) / 255; v = Math.min(1, Math.max(0, (v - 0.5) * 1.35 + 0.55)); L[i] = v; }
+    puntos.width = W; puntos.height = H;
+    const pg = puntos.getContext("2d"); pg.clearRect(0, 0, W, H); pg.fillStyle = "rgba(40,22,8,.92)";
+    for (let y = 0; y < ch; y++) for (let x = 0; x < cw; x++) {
+      const i = y * cw + x, v = L[i], q = v < 0.5 ? 0 : 1, err = v - q;
+      if (q === 0) pg.fillRect(px + x * paso, py + y * paso, paso * 0.92, paso * 0.92);
+      if (x + 1 < cw) L[i + 1] += err * 7 / 16;
+      if (y + 1 < ch) { if (x > 0) L[i + cw - 1] += err * 3 / 16; L[i + cw] += err * 5 / 16; if (x + 1 < cw) L[i + cw + 1] += err / 16; }
+    }
+    fila = py; pausa = 0; listo = true;
+    return true;
+  }
+  function dibujar(hasta) {
+    ctx.drawImage(madera, 0, 0);
+    ctx.strokeStyle = "rgba(60,35,15,.35)"; ctx.lineWidth = 1 * dpr; ctx.strokeRect(px - 6 * dpr, py - 6 * dpr, pw + 12 * dpr, ph + 12 * dpr);
+    ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, hasta); ctx.clip(); ctx.drawImage(puntos, 0, 0); ctx.restore();
+  }
+  function cabezal(x, y) {
+    ctx.fillStyle = "rgba(10,13,18,.9)"; ctx.fillRect(x - 14 * dpr, y - 30 * dpr, 28 * dpr, 20 * dpr);
+    const r = ctx.createRadialGradient(x, y, 0, x, y, 13 * dpr); r.addColorStop(0, "rgba(255,255,255,1)"); r.addColorStop(0.25, "rgba(255,68,56,.95)"); r.addColorStop(1, "rgba(255,68,56,0)");
+    ctx.fillStyle = r; ctx.beginPath(); ctx.arc(x, y, 13 * dpr, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "rgba(90,140,255,.9)"; ctx.lineWidth = 1.5 * dpr; ctx.beginPath(); ctx.moveTo(x, y - 10 * dpr); ctx.lineTo(x, y); ctx.stroke();
+  }
+  function paso() {
+    if (!listo && !preparar()) { requestAnimationFrame(paso); return; }
+    if (cv.offsetParent !== null) {
+      if (fila < py + ph) {
+        fila = Math.min(py + ph, fila + ph / 240);
+        dibujar(fila);
+        const t = performance.now() / 90, x = px + (Math.sin(t) * 0.5 + 0.5) * pw;
+        cabezal(x, fila);
+      } else {
+        dibujar(H);
+        if (++pausa > 200) { fila = py; pausa = 0; }
+      }
+    }
+    requestAnimationFrame(paso);
+  }
+  document.getElementById("l-foto").addEventListener("change", (ev) => {
+    const f = ev.target.files && ev.target.files[0]; if (!f) return;
+    const rd = new FileReader();
+    rd.onload = () => { const im = new Image(); im.onload = () => { fuente = im; listo = false; if (quieto) dibujarQuieto(); }; im.src = rd.result; };
+    rd.readAsDataURL(f);
+  });
+  function dibujarQuieto() { const t = setInterval(() => { if (preparar()) { dibujar(H); clearInterval(t); } }, 300); }
+  if (quieto) dibujarQuieto(); else requestAnimationFrame(paso);
+  window.addEventListener("resize", () => { listo = false; if (quieto) dibujarQuieto(); });
+})();
+
+</script>
+
+</body>
+</html>
